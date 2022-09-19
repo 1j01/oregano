@@ -6,6 +6,7 @@
 		"framebuffer",
 		"gamepad",
 		"netplay",
-		"quickstart"
+		"quickstart",
+		"WASI"
 	]
 }

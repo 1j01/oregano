@@ -17,30 +17,30 @@ const uint8_t smiley[] = {
     0b11000011,
 };
 
-struct Particle
+typedef struct
 {
     double x;
     double y;
     double vx;
     double vy;
     int life;
-};
+} Particle;
 
-struct Stick
+typedef struct
 {
-    struct Particle *a;
-    struct Particle *b;
+    Particle *a;
+    Particle *b;
     double restLength;
     int life;
-};
+} Stick;
 
-struct Particle particles[MAX_PARTICLES];
-struct Stick sticks[MAX_STICKS];
+Particle particles[MAX_PARTICLES];
+Stick sticks[MAX_STICKS];
 
 // stupid methods just for adding to arrays
 // I'm learning C.
 // Probably should track the count, and shift elements when removing.
-int add_particle(struct Particle particle)
+int add_particle(Particle particle)
 {
     for (int i = 0; i < MAX_PARTICLES; i++)
     {
@@ -53,7 +53,7 @@ int add_particle(struct Particle particle)
     return -1;
 }
 
-int add_stick(struct Stick stick)
+int add_stick(Stick stick)
 {
     for (int i = 0; i < MAX_STICKS; i++)
     {
@@ -74,7 +74,7 @@ void step()
     {
         for (int i = 0; i < MAX_STICKS; i++)
         {
-            struct Stick *s = &sticks[i];
+            Stick *s = &sticks[i];
             if (s->life > 0)
             {
                 double dx = s->a->x - s->b->x;
@@ -92,7 +92,7 @@ void step()
 
     for (int i = 0; i < MAX_STICKS; i++)
     {
-        struct Stick *s = &sticks[i];
+        Stick *s = &sticks[i];
         if (abs((int32_t)(s->a->x - s->b->x)) > 800 ||
             abs((int32_t)(s->a->y - s->b->y)) > 800 ||
             s->a->life <= 0 ||
@@ -103,7 +103,7 @@ void step()
     }
     for (int i = 0; i < MAX_PARTICLES; i++)
     {
-        struct Particle *p = &particles[i];
+        Particle *p = &particles[i];
         if (p->life > 0)
         {
             p->x += p->vx;
@@ -120,7 +120,7 @@ void draw()
 
     for (int i = 0; i < MAX_STICKS; i++)
     {
-        struct Stick *s = &sticks[i];
+        Stick *s = &sticks[i];
         if (s->life > 0)
         {
             // s->life -= 1;
@@ -130,7 +130,7 @@ void draw()
 
     for (int i = 0; i < MAX_PARTICLES; i++)
     {
-        struct Particle *p = &particles[i];
+        Particle *p = &particles[i];
         if (p->life > 0)
         {
             // p->life -= 1;
@@ -151,9 +151,9 @@ void update()
     {
         *DRAW_COLORS = 4;
 
-        struct Particle p = {80, 80, sin(t), cos(t), 100};
+        Particle p = {80, 80, sin(t), cos(t), 100};
         int p_i = add_particle(p);
-        struct Stick stick = {&particles[p_i], &particles[p_i - 1], 10, 100};
+        Stick stick = {&particles[p_i], &particles[p_i - 1], 10, 100};
         add_stick(stick);
     }
 

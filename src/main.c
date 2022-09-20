@@ -1,5 +1,6 @@
 #include "wasm4.h"
 #include <math.h>
+#include <stdlib.h>
 
 #define MAX_PARTICLES 500
 #define MAX_STICKS 300
@@ -108,10 +109,13 @@ void update()
     for (int i = 0; i < MAX_STICKS; i++)
     {
         struct Stick *s = &sticks[i];
-        // if (abs(s->a->x - s->b->x) > 800) s->life = 0;
-        // if (abs(s->a->y - s->b->y) > 800) s->life = 0;
-        // if (s->a->life <= 0) s->life = 0;
-        // if (s->a->life <= 0) s->life = 0;
+        if (abs((int32_t)(s->a->x - s->b->x)) > 800 ||
+            abs((int32_t)(s->a->y - s->b->y)) > 800 ||
+            s->a->life <= 0 ||
+            s->a->life <= 0)
+        {
+            s->life = 0;
+        }
         if (s->life > 0)
         {
             // s->life -= 1;

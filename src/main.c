@@ -85,31 +85,33 @@ void update()
         add_stick(stick);
     }
 
-    // for (int it = 0; it < ITERATIONS; it++)
-    // {
-    //     for (int i = 0; i < MAX_STICKS; i++)
-    //     {
-    //         struct Stick *s = &sticks[i];
-    //         if (s->life > 0)
-    //         {
-    //             double dx = s->a->x - s->b->x;
-    //             double dy = s->a->y - s->b->y;
-    //             double d = sqrt(dx * dx + dy * dy);
-    //             double delta = s->restLength - d;
-    //             double force = delta * 0.01;
-    //             s->a->vx -= force * dx;
-    //             s->a->vy -= force * dy;
-    //             s->b->vx += force * dx;
-    //             s->b->vy += force * dy;
-    //         }
-    //     }
-    // }
+    for (int it = 0; it < ITERATIONS; it++)
+    {
+        for (int i = 0; i < MAX_STICKS; i++)
+        {
+            struct Stick *s = &sticks[i];
+            if (s->life > 0)
+            {
+                double dx = s->a->x - s->b->x;
+                double dy = s->a->y - s->b->y;
+                double d = sqrt(dx * dx + dy * dy);
+                double delta = s->restLength - d;
+                double force = delta * 0.00001;
+                s->a->vx += force * dx;
+                s->a->vy += force * dy;
+                s->b->vx -= force * dx;
+                s->b->vy -= force * dy;
+            }
+        }
+    }
 
     for (int i = 0; i < MAX_STICKS; i++)
     {
         struct Stick *s = &sticks[i];
-        // if (abs(s->a->x - s->b->x) > 160) s->life = 0;
-        // if (abs(s->a->y - s->b->y) > 160) s->life = 0;
+        // if (abs(s->a->x - s->b->x) > 800) s->life = 0;
+        // if (abs(s->a->y - s->b->y) > 800) s->life = 0;
+        // if (s->a->life <= 0) s->life = 0;
+        // if (s->a->life <= 0) s->life = 0;
         if (s->life > 0)
         {
             // s->life -= 1;

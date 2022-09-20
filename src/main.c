@@ -88,7 +88,7 @@ void step()
                 s->a->vx += force * dx;
                 s->a->vy += force * dy;
                 s->b->vx -= force * dx;
-                s->b->vy -= force * dy;
+                // s->b->vy -= force * dy;
             }
         }
     }

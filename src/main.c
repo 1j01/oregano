@@ -68,24 +68,8 @@ int add_stick(struct Stick stick)
 
 int t = 0;
 
-void update()
+void step()
 {
-    t++;
-
-    *DRAW_COLORS = 2;
-    text("Hello from C!", 10, 10);
-
-    uint8_t gamepad = *GAMEPAD1;
-    if (gamepad & BUTTON_1)
-    {
-        *DRAW_COLORS = 4;
-
-        struct Particle p = {80, 80, sin(t), cos(t), 100};
-        int p_i = add_particle(p);
-        struct Stick stick = {&particles[p_i], &particles[p_i - 1], 10, 100};
-        add_stick(stick);
-    }
-
     for (int it = 0; it < ITERATIONS; it++)
     {
         for (int i = 0; i < MAX_STICKS; i++)
@@ -116,6 +100,27 @@ void update()
         {
             s->life = 0;
         }
+    }
+    for (int i = 0; i < MAX_PARTICLES; i++)
+    {
+        struct Particle *p = &particles[i];
+        if (p->life > 0)
+        {
+            p->x += p->vx;
+            p->y += p->vy;
+        }
+    }
+}
+
+void draw()
+{
+
+    *DRAW_COLORS = 2;
+    text("Hello from C!", 10, 10);
+
+    for (int i = 0; i < MAX_STICKS; i++)
+    {
+        struct Stick *s = &sticks[i];
         if (s->life > 0)
         {
             // s->life -= 1;
@@ -128,12 +133,30 @@ void update()
         struct Particle *p = &particles[i];
         if (p->life > 0)
         {
-            p->x += p->vx;
-            p->y += p->vy;
-            p->life -= 1;
+            // p->life -= 1;
             blit(smiley, (int32_t)p->x, (int32_t)p->y, 8, 8, BLIT_1BPP);
         }
     }
+
     text("Press X to spawn", 16, 90);
     text("some particles!", 22, 103);
+}
+
+void update()
+{
+    t++;
+
+    uint8_t gamepad = *GAMEPAD1;
+    if (gamepad & BUTTON_1)
+    {
+        *DRAW_COLORS = 4;
+
+        struct Particle p = {80, 80, sin(t), cos(t), 100};
+        int p_i = add_particle(p);
+        struct Stick stick = {&particles[p_i], &particles[p_i - 1], 10, 100};
+        add_stick(stick);
+    }
+
+    step();
+    draw();
 }

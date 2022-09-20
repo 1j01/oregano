@@ -36,14 +36,18 @@ typedef struct
 
 particle_t particles[MAX_PARTICLES];
 stick_t sticks[MAX_STICKS];
-int particle_count;
+int particle_count = 0;
 int stick_count;
 
 int add_particle(particle_t particle)
 {
+    tracef("Adding particle %d\n", particle_count);
+    tracef("-- %d\n", --particle_count);
+    tracef("++ %d\n", ++particle_count);
     if (particle_count >= MAX_PARTICLES - 1)
         return -1;
     particles[particle_count++] = particle;
+    tracef("now %d\n", particle_count);
     return particle_count - 1;
 }
 
@@ -55,15 +59,15 @@ int add_stick(stick_t stick)
     return stick_count - 1;
 }
 
-void remove_particle(int index)
-{
-    particles[index] = particles[--particle_count];
-}
+// void remove_particle(int index)
+// {
+//     particles[index] = particles[--particle_count];
+// }
 
-void remove_stick(int index)
-{
-    sticks[index] = sticks[--stick_count];
-}
+// void remove_stick(int index)
+// {
+//     sticks[index] = sticks[--stick_count];
+// }
 
 int t = 0;
 
@@ -145,6 +149,8 @@ void update()
 {
     t++;
 
+    tracef("start of update, particle_count: %d\n", particle_count);
+    
     uint8_t gamepad = *GAMEPAD1;
     if (gamepad & BUTTON_1)
     {
@@ -152,6 +158,7 @@ void update()
 
         particle_t p = {80, 80, sin(t), cos(t), 100};
         int p_i = add_particle(p);
+        tracef("after add_particle, particle_count: %d\n", particle_count);
         if (p_i > -1)
         {
             stick_t stick = {&particles[p_i], &particles[p_i - 1], 10, 100};
@@ -159,6 +166,9 @@ void update()
         }
     }
 
+    tracef("before step(), particle_count: %d\n", particle_count);
     step();
+    tracef("after step(), particle_count: %d\n", particle_count);
     draw();
+    tracef("end of update, particle_count: %d\n", particle_count);
 }

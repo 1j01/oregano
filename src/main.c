@@ -36,34 +36,33 @@ typedef struct
 
 particle_t particles[MAX_PARTICLES];
 stick_t sticks[MAX_STICKS];
+int particle_count;
+int stick_count;
 
-// stupid methods just for adding to arrays
-// I'm learning C.
-// Probably should track the count, and shift elements when removing.
 int add_particle(particle_t particle)
 {
-    for (int i = 0; i < MAX_PARTICLES; i++)
-    {
-        if (particles[i].life <= 0)
-        {
-            particles[i] = particle;
-            return i;
-        }
-    }
-    return -1;
+    if (particle_count >= MAX_PARTICLES - 1)
+        return -1;
+    particles[particle_count++] = particle;
+    return particle_count - 1;
 }
 
 int add_stick(stick_t stick)
 {
-    for (int i = 0; i < MAX_STICKS; i++)
-    {
-        if (sticks[i].life <= 0)
-        {
-            sticks[i] = stick;
-            return i;
-        }
-    }
-    return -1;
+    if (stick_count >= MAX_STICKS - 1)
+        return -1;
+    sticks[stick_count++] = stick;
+    return stick_count - 1;
+}
+
+void remove_particle(int index)
+{
+    particles[index] = particles[--particle_count];
+}
+
+void remove_stick(int index)
+{
+    sticks[index] = sticks[--stick_count];
 }
 
 int t = 0;
@@ -72,7 +71,7 @@ void step()
 {
     for (int it = 0; it < ITERATIONS; it++)
     {
-        for (int i = 0; i < MAX_STICKS; i++)
+        for (int i = 0; i < stick_count; i++)
         {
             stick_t *s = &sticks[i];
             if (s->life > 0)
@@ -90,7 +89,7 @@ void step()
         }
     }
 
-    for (int i = 0; i < MAX_STICKS; i++)
+    for (int i = 0; i < stick_count; i++)
     {
         stick_t *s = &sticks[i];
         if (abs((int32_t)(s->a->x - s->b->x)) > 800 ||
@@ -101,7 +100,7 @@ void step()
             s->life = 0;
         }
     }
-    for (int i = 0; i < MAX_PARTICLES; i++)
+    for (int i = 0; i < particle_count; i++)
     {
         particle_t *p = &particles[i];
         if (p->life > 0)
@@ -118,7 +117,7 @@ void draw()
     *DRAW_COLORS = 2;
     text("Hello from C!", 10, 10);
 
-    for (int i = 0; i < MAX_STICKS; i++)
+    for (int i = 0; i < stick_count; i++)
     {
         stick_t *s = &sticks[i];
         if (s->life > 0)
@@ -128,12 +127,12 @@ void draw()
         }
     }
 
-    for (int i = 0; i < MAX_PARTICLES; i++)
+    for (int i = 0; i < particle_count; i++)
     {
         particle_t *p = &particles[i];
         if (p->life > 0)
         {
-            // p->life -= 1;
+            p->life -= 1;
             blit(smiley, (int32_t)p->x, (int32_t)p->y, 8, 8, BLIT_1BPP);
         }
     }
@@ -153,8 +152,11 @@ void update()
 
         particle_t p = {80, 80, sin(t), cos(t), 100};
         int p_i = add_particle(p);
-        stick_t stick = {&particles[p_i], &particles[p_i - 1], 10, 100};
-        add_stick(stick);
+        if (p_i > -1)
+        {
+            stick_t stick = {&particles[p_i], &particles[p_i - 1], 10, 100};
+            add_stick(stick);
+        }
     }
 
     step();

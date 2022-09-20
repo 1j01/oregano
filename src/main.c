@@ -93,26 +93,26 @@ void step()
         }
     }
 
-    for (int i = 0; i < stick_count; i++)
-    {
-        stick_t *s = &sticks[i];
-        if (abs((int32_t)(s->a->x - s->b->x)) > 800 ||
-            abs((int32_t)(s->a->y - s->b->y)) > 800 ||
-            s->a->life <= 0 ||
-            s->a->life <= 0)
-        {
-            s->life = 0;
-        }
-    }
-    for (int i = 0; i < particle_count; i++)
-    {
-        particle_t *p = &particles[i];
-        if (p->life > 0)
-        {
-            p->x += p->vx;
-            p->y += p->vy;
-        }
-    }
+    // for (int i = 0; i < stick_count; i++)
+    // {
+    //     stick_t *s = &sticks[i];
+    //     if (abs((int32_t)(s->a->x - s->b->x)) > 800 ||
+    //         abs((int32_t)(s->a->y - s->b->y)) > 800 ||
+    //         s->a->life <= 0 ||
+    //         s->a->life <= 0)
+    //     {
+    //         s->life = 0;
+    //     }
+    // }
+    // for (int i = 0; i < particle_count; i++)
+    // {
+    //     particle_t *p = &particles[i];
+    //     if (p->life > 0)
+    //     {
+    //         p->x += p->vx;
+    //         p->y += p->vy;
+    //     }
+    // }
 }
 
 void draw()

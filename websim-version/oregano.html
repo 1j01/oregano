@@ -56,10 +56,12 @@
     left: 50%;
     transform: translate(-50%, -50%);
     font-size: 36px;
-    color: #4CAF50;
+    color: #FFD700;
     font-weight: bold;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
     display: none;
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
   }
 </style>
 
@@ -139,9 +141,9 @@
   // Create stems with bezier curves
   function createStem(startX, startY, endX, endY) {
     const controlPoint1X = startX + (endX - startX) / 3;
-    const controlPoint1Y = startY + Math.random() * 100 - 50;
+    const controlPoint1Y = startY + Math.random() * 150 - 75; // Increased range
     const controlPoint2X = startX + 2 * (endX - startX) / 3;
-    const controlPoint2Y = endY + Math.random() * 100 - 50;
+    const controlPoint2Y = endY + Math.random() * 150 - 75; // Increased range
 
     const points = [];
     for (let t = 0; t <= 1; t += 0.05) {
@@ -186,9 +188,9 @@
 
       do {
         startX = i * sectionWidth + Math.random() * (sectionWidth - 100);
-        startY = Math.random() * (canvas.height - 300) + 150;
-        endX = startX + Math.random() * 100 + 50;
-        endY = startY + (Math.random() - 0.5) * 200;
+        startY = Math.random() * (canvas.height - 400) + 150; // Increased range
+        endX = startX + Math.random() * 150 + 75; // Increased range
+        endY = startY + (Math.random() - 0.5) * 300; // Increased range
         attempts++;
       } while (checkStemOverlap(startX, startY, endX, endY) && attempts < maxAttempts);
 
@@ -288,9 +290,13 @@
 
   function showExtraBallMessage() {
     extraBallMessage.style.display = 'block';
+    extraBallMessage.style.opacity = '1';
     setTimeout(() => {
-      extraBallMessage.style.display = 'none';
-    }, 2000);
+      extraBallMessage.style.opacity = '0';
+      setTimeout(() => {
+        extraBallMessage.style.display = 'none';
+      }, 500);
+    }, 1500);
   }
 
   function endGame() {
@@ -385,7 +391,7 @@
     ctx.fill();
 
     // Draw barrel
-    ctx.rotate(cannon.angle);
+    ctx.rotate(cannon.angle - Math.PI / 2); // Adjusted angle
     ctx.fillStyle = cannon.barrelColor;
     ctx.fillRect(-cannon.width / 2, 0, cannon.width, cannon.height);
 

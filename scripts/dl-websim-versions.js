@@ -170,7 +170,7 @@ async function downloadVersions(versions, outputDirectory, outputFileName) {
 
 	const downloadFile = (async (url, destination) => {
 	  const res = await fetch(url);
-	  const fileStream = fs.createWriteStream(destination, { flags: 'wx' });
+	  const fileStream = fs.createWriteStream(destination, { flags: 'w' }); // allowing overwrites
 	  await finished(Readable.fromWeb(res.body).pipe(fileStream));
 	});
 

@@ -6,8 +6,19 @@
     padding: 0;
     height: 100%;
     overflow: hidden;
-    background: linear-gradient(to bottom, #87CEEB, #E0F6FF);
+    background: #87CEEB;
     font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  #gameContainer {
+    position: relative;
+    width: 800px;
+    height: 600px;
+    background: linear-gradient(to bottom, #E0F6FF, #87CEEB);
+    border: 4px solid #333;
+    box-shadow: 0 0 20px rgba(0,0,0,0.3);
   }
   #gameCanvas {
     position: absolute;
@@ -17,11 +28,11 @@
   #score, #ballsLeft {
     position: absolute;
     left: 10px;
-    font-size: 24px;
+    font-size: 18px;
     color: #333;
   }
   #score { top: 10px; }
-  #ballsLeft { top: 40px; }
+  #ballsLeft { top: 35px; }
   #gameOver {
     position: absolute;
     top: 50%;
@@ -36,8 +47,8 @@
   }
   #restartButton, #resetBallButton {
     margin-top: 20px;
-    padding: 10px 20px;
-    font-size: 18px;
+    padding: 8px 16px;
+    font-size: 16px;
     background-color: #4CAF50;
     color: white;
     border: none;
@@ -46,7 +57,7 @@
   }
   #resetBallButton {
     position: absolute;
-    top: 70px;
+    top: 60px;
     left: 10px;
     background-color: #f44336;
   }
@@ -55,7 +66,7 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    font-size: 36px;
+    font-size: 28px;
     font-weight: bold;
     text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
     display: none;
@@ -66,17 +77,19 @@
   #totalMissMessage { color: #FF4500; }
 </style>
 
-<canvas id="gameCanvas"></canvas>
-<div id="score">Score: 0</div>
-<div id="ballsLeft">Balls: 10</div>
-<button id="resetBallButton">Reset Ball</button>
-<div id="gameOver">
-  <h2>Game Over</h2>
-  <p>Your score: <span id="finalScore"></span></p>
-  <button id="restartButton">Restart</button>
+<div id="gameContainer">
+  <canvas id="gameCanvas"></canvas>
+  <div id="score">Score: 0</div>
+  <div id="ballsLeft">Balls: 10</div>
+  <button id="resetBallButton">Reset Ball</button>
+  <div id="gameOver">
+    <h2>Game Over</h2>
+    <p>Your score: <span id="finalScore"></span></p>
+    <button id="restartButton">Restart</button>
+  </div>
+  <div id="extraBallMessage">Extra Ball!</div>
+  <div id="totalMissMessage">Total Miss - Free Ball!</div>
 </div>
-<div id="extraBallMessage">Extra Ball!</div>
-<div id="totalMissMessage">Total Miss - Free Ball!</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.18.0/matter.min.js"></script>
 <script>
@@ -91,8 +104,8 @@
   const extraBallMessage = document.getElementById('extraBallMessage');
   const totalMissMessage = document.getElementById('totalMissMessage');
 
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
+  canvas.width = 800;
+  canvas.height = 600;
 
   let score = 0;
   let ballsLeft = 10;
@@ -106,12 +119,12 @@
   // Cannon
   const cannon = {
     x: canvas.width / 2,
-    y: 80,
+    y: 60,
     angle: 0,
-    width: 80,
-    height: 100,
-    baseWidth: 120,
-    baseHeight: 60,
+    width: 60,
+    height: 80,
+    baseWidth: 90,
+    baseHeight: 45,
     color: '#444',
     barrelColor: '#666',
     rimColor: '#888',
@@ -129,33 +142,34 @@
   const target = {
     x: canvas.width / 2,
     y: canvas.height,
-    width: 200,
+    width: 160,
     height: 20,
     color: '#00FF00',
     direction: 1,
-    speed: 5
+    speed: 3
   };
 
   // Bounce triangles
-  const triangleSize = 40;
-  const leftTriangle = Matter.Bodies.polygon(target.x - target.width / 2 - triangleSize / 2, target.y - triangleSize, 3, triangleSize, { isStatic: true, angle: 0 });
-  const rightTriangle = Matter.Bodies.polygon(target.x + target.width / 2 + triangleSize / 2, target.y - triangleSize, 3, triangleSize, { isStatic: true, angle: 0 });
+  const triangleSize = 30;
+  const leftTriangle = Matter.Bodies.polygon(target.x - target.width / 2 - triangleSize / 2, target.y - triangleSize, 3, triangleSize, { isStatic: true, angle: Math.PI });
+  const rightTriangle = Matter.Bodies.polygon(target.x + target.width / 2 + triangleSize / 2, target.y - triangleSize, 3, triangleSize, { isStatic: true, angle: Math.PI });
   Matter.World.add(world, [leftTriangle, rightTriangle]);
 
   function createWalls() {
     const wallOptions = { isStatic: true, restitution: 0.7 };
     return [
       Matter.Bodies.rectangle(0, canvas.height / 2, 10, canvas.height, wallOptions),
-      Matter.Bodies.rectangle(canvas.width, canvas.height / 2, 10, canvas.height, wallOptions)
+      Matter.Bodies.rectangle(canvas.width, canvas.height / 2, 10, canvas.height, wallOptions),
+      Matter.Bodies.rectangle(canvas.width / 2, 0, canvas.width, 10, wallOptions)
     ];
   }
 
   // Create stems with bezier curves
   function createStem(startX, startY, endX, endY) {
     const controlPoint1X = startX + (endX - startX) / 3;
-    const controlPoint1Y = startY + Math.random() * 150 - 75;
+    const controlPoint1Y = startY + Math.random() * 120 - 60;
     const controlPoint2X = startX + 2 * (endX - startX) / 3;
-    const controlPoint2Y = endY + Math.random() * 150 - 75;
+    const controlPoint2Y = endY + Math.random() * 120 - 60;
 
     const points = [];
     for (let t = 0; t <= 1; t += 0.05) {
@@ -190,7 +204,7 @@
   function createStemsAndLeaves() {
     stems = [];
     leaves = [];
-    const numStems = 5;
+    const numStems = 4;
     const sectionWidth = canvas.width / numStems;
 
     for (let i = 0; i < numStems; i++) {
@@ -199,10 +213,10 @@
       const maxAttempts = 10;
 
       do {
-        startX = i * sectionWidth + Math.random() * (sectionWidth - 100);
-        startY = Math.random() * (canvas.height - 400) + 150;
-        endX = startX + Math.random() * 150 + 75;
-        endY = startY + (Math.random() - 0.5) * 300;
+        startX = i * sectionWidth + Math.random() * (sectionWidth - 80);
+        startY = Math.random() * (canvas.height - 300) + 120;
+        endX = startX + Math.random() * 120 + 60;
+        endY = startY + (Math.random() - 0.5) * 240;
         attempts++;
       } while (checkStemOverlap(startX, startY, endX, endY) && attempts < maxAttempts);
 
@@ -211,8 +225,8 @@
         stems.push(stem);
         Matter.World.add(world, stem.body);
 
-        for (let j = 0; j < 5; j++) {
-          const t = j / 4;
+        for (let j = 0; j < 4; j++) {
+          const t = j / 3;
           const x = Math.pow(1-t, 3) * stem.start.x +
                     3 * Math.pow(1-t, 2) * t * stem.control1.x +
                     3 * (1-t) * Math.pow(t, 2) * stem.control2.x +
@@ -224,12 +238,12 @@
           const leaf = {
             x: x,
             y: y,
-            radius: 20,
+            radius: 16,
             color: '#228B22',
             active: true,
             falling: false,
             velocity: { x: 0, y: 0 },
-            stemLength: 10,
+            stemLength: 8,
             stemAngle: Math.random() * Math.PI * 2
           };
           leaves.push(leaf);
@@ -264,8 +278,11 @@
   // Mouse control
   canvas.addEventListener('mousemove', (event) => {
     if (!gameActive) return;
-    const dx = event.clientX - cannon.x;
-    const dy = event.clientY - cannon.y;
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = event.clientX - rect.left;
+    const mouseY = event.clientY - rect.top;
+    const dx = mouseX - cannon.x;
+    const dy = mouseY - cannon.y;
     cannon.angle = Math.atan2(dy, dx);
   });
 
@@ -276,7 +293,7 @@
 
   function fireBall() {
     if (ball === null && ballsLeft > 0) {
-      const ballRadius = 15;
+      const ballRadius = 12;
       const barrelEndX = cannon.x + Math.cos(cannon.angle) * cannon.height;
       const barrelEndY = cannon.y + Math.sin(cannon.angle) * cannon.height;
       
@@ -285,8 +302,8 @@
         friction: 0.001
       });
       Matter.Body.applyForce(ball, ball.position, {
-        x: Math.cos(cannon.angle) * 0.03,
-        y: Math.sin(cannon.angle) * 0.03
+        x: Math.cos(cannon.angle) * 0.025,
+        y: Math.sin(cannon.angle) * 0.025
       });
       Matter.World.add(world, ball);
       ballsLeft--;
@@ -453,7 +470,7 @@
     // Update ball
     if (ball !== null) {
       ctx.beginPath();
-      ctx.arc(ball.position.x, ball.position.y, 15, 0, Math.PI * 2);
+      ctx.arc(ball.position.x, ball.position.y, 12, 0, Math.PI * 2);
       ctx.fillStyle = '#FF0000';
       ctx.fill();
 

@@ -149,13 +149,13 @@ This explains why it was colliding with the empty space near the stems.`,
 		"prompt": "Add angle: Math.PI / 2 to triangles",
 		"id": "LXFnubGCibmKSbvP8"
 	},
-// 	{
-// 		"commitSummary": "Tweak sound effects for stems falling and level win",
-// 		"commitNote": `Note:
-// I ran into the limit of the AI's willingness to reproduce existing unchanged code.`,
-// 		"prompt": "For the stem falling, play a bunch of separate cracks/pops, for a better crunchier sound.\nFor the level win, play a set of choral ascending arpeggios.",
-// 		"id": "pFo63qPDtjfeDCGqP"
-// 	},
+	// {
+	// 	"commitSummary": "Tweak sound effects for stems falling and level win",
+	// 	"commitNote": `Note:
+	// I ran into the limit of the AI's willingness to reproduce existing unchanged code.`,
+	// 	"prompt": "For the stem falling, play a bunch of separate cracks/pops, for a better crunchier sound.\nFor the level win, play a set of choral ascending arpeggios.",
+	// 	"id": "pFo63qPDtjfeDCGqP"
+	// },
 	// ------------
 	{
 		"commitSummary": "Add multiplier & goal leaves, and improve SFX",
@@ -187,9 +187,9 @@ async function downloadVersions(versions, outputDirectory, outputFileName) {
 	const exec = promisify(require('child_process').exec)
 
 	const downloadFile = (async (url, destination) => {
-	  const res = await fetch(url);
-	  const fileStream = fs.createWriteStream(destination, { flags: 'w' }); // allowing overwrites
-	  await finished(Readable.fromWeb(res.body).pipe(fileStream));
+		const res = await fetch(url);
+		const fileStream = fs.createWriteStream(destination, { flags: 'w' }); // allowing overwrites
+		await finished(Readable.fromWeb(res.body).pipe(fileStream));
 	});
 
 	let v = 1;
@@ -208,7 +208,7 @@ Websim version link: https://websim.ai/c/${id}
 
 Automatically downloaded from ${dlUrl}
 via dl-websim-versions.js
-${commitNote? `\n${commitNote}\n` : ''}
+${commitNote ? `\n${commitNote}\n` : ''}
 LLM prompt:
 ${prompt}`;
 		const commitMessageFile = "commit-message.txt";

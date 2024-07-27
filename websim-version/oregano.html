@@ -122,32 +122,59 @@
   let gameActive = true;
   let lastBallScore = 0;
   let soundEnabled = true;
+  let leafCollectedThisShot = 0;
 
-  // Sound effects
-  const sounds = {
-    fire: new Audio('https://oregano.game/sounds/fire.mp3'),
-    hitLeaf: new Audio('https://oregano.game/sounds/hit_leaf.mp3'),
-    extraBall: new Audio('https://oregano.game/sounds/extra_ball.mp3'),
-    totalMiss: new Audio('https://oregano.game/sounds/total_miss.mp3'),
-    gameOver: new Audio('https://oregano.game/sounds/game_over.mp3')
-  };
+  // Web Audio API setup
+  const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
-  // Initialize all sounds to a low volume
-  Object.values(sounds).forEach(sound => {
-    sound.volume = 0.3;
-  });
+  function createOscillator(frequency, duration) {
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+    
+    gainNode.gain.setValueAtTime(0.5, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.start();
+    oscillator.stop(audioContext.currentTime + duration);
+  }
+
+  function playLeafCollectSound() {
+    const baseFrequency = 300;
+    const frequency = baseFrequency + (leafCollectedThisShot * 50);
+    createOscillator(frequency, 0.2);
+  }
+
+  function playFireSound() {
+    createOscillator(150, 0.3);
+  }
+
+  function playExtraBallSound() {
+    createOscillator(400, 0.5);
+  }
+
+  function playTotalMissSound() {
+    createOscillator(100, 0.5);
+  }
+
+  function playGameOverSound() {
+    createOscillator(200, 1);
+  }
 
   soundToggle.addEventListener('click', () => {
     soundEnabled = !soundEnabled;
     soundToggle.textContent = soundEnabled ? '🔊' : '🔇';
-  });
-
-  function playSound(sound) {
     if (soundEnabled) {
-      sound.currentTime = 0;
-      sound.play();
+      audioContext.resume();
+    } else {
+      audioContext.suspend();
     }
-  }
+  });
 
   // Matter.js setup
   let engine = Matter.Engine.create();
@@ -346,7 +373,8 @@
       ballsLeft--;
       updateBallsLeft();
       lastBallScore = score;
-      playSound(sounds.fire);
+      leafCollectedThisShot = 0;
+      if (soundEnabled) playFireSound();
     }
   }
 
@@ -374,7 +402,7 @@
     gameActive = false;
     finalScoreElement.textContent = score;
     gameOverElement.style.display = 'block';
-    playSound(sounds.gameOver);
+    if (soundEnabled) playGameOverSound();
   }
 
   function restartGame() {
@@ -383,6 +411,7 @@
     lastBallScore = 0;
     ballsLeft = 10;
     gameActive = true;
+    leafCollectedThisShot = 0;
     updateScore(0);
     updateBallsLeft();
     gameOverElement.style.display = 'none';
@@ -523,7 +552,7 @@
           ballsLeft++;
           updateBallsLeft();
           showMessage(totalMissMessage);
-          playSound(sounds.totalMiss);
+          if (soundEnabled) playTotalMissSound();
         }
       }
     }
@@ -564,7 +593,8 @@
               y: -2 - Math.random() * 2
             };
             updateScore(10);
-            playSound(sounds.hitLeaf);
+            leafCollectedThisShot++;
+            if (soundEnabled) playLeafCollectSound();
           }
         }
       }
@@ -597,7 +627,7 @@
       ballsLeft++;
       updateBallsLeft();
       showMessage(extraBallMessage);
-      playSound(sounds.extraBall);
+      if (soundEnabled) playExtraBallSound();
     }
 
     Matter.Engine.update(engine);

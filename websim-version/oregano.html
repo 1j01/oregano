@@ -182,14 +182,15 @@
                   Math.pow(t, 3) * stem.end.y;
         const leaf = {
           x: x,
-          y: y - 20,
-          radius: 15,
+          y: y,
+          width: 30,
+          height: 40,
           color: '#228B22',
           active: true,
           falling: false,
           velocity: { x: 0, y: 0 },
-          stemLength: 20,
-          stemAngle: Math.random() * Math.PI
+          stemLength: 10,
+          stemAngle: Math.random() * Math.PI * 2
         };
         leaves.push(leaf);
       }
@@ -288,25 +289,33 @@
   restartButton.addEventListener('click', restartGame);
   resetBallButton.addEventListener('click', resetBall);
 
-  function drawPointedLeaf(ctx, x, y, radius, stemLength, stemAngle, color) {
+  function drawLeaf(ctx, leaf) {
     ctx.save();
-    ctx.translate(x, y);
-    ctx.rotate(stemAngle);
+    ctx.translate(leaf.x, leaf.y);
+    ctx.rotate(leaf.stemAngle);
 
     // Draw stem
     ctx.beginPath();
     ctx.moveTo(0, 0);
-    ctx.lineTo(0, stemLength);
+    ctx.lineTo(0, leaf.stemLength);
     ctx.strokeStyle = '#8B4513';
     ctx.lineWidth = 2;
     ctx.stroke();
 
-    // Draw pointed leaf
+    // Draw leaf
     ctx.beginPath();
-    ctx.moveTo(0, stemLength);
-    ctx.quadraticCurveTo(radius, stemLength + radius / 2, 0, stemLength + radius * 2);
-    ctx.quadraticCurveTo(-radius, stemLength + radius / 2, 0, stemLength);
-    ctx.fillStyle = color;
+    ctx.moveTo(0, leaf.stemLength);
+    ctx.bezierCurveTo(
+      leaf.width / 2, leaf.stemLength,
+      leaf.width / 2, leaf.stemLength + leaf.height,
+      0, leaf.stemLength + leaf.height
+    );
+    ctx.bezierCurveTo(
+      -leaf.width / 2, leaf.stemLength + leaf.height,
+      -leaf.width / 2, leaf.stemLength,
+      0, leaf.stemLength
+    );
+    ctx.fillStyle = leaf.color;
     ctx.fill();
 
     ctx.restore();
@@ -352,7 +361,7 @@
     // Update leaves
     leaves.forEach(leaf => {
       if (leaf.active || leaf.falling) {
-        drawPointedLeaf(ctx, leaf.x, leaf.y, leaf.radius, leaf.stemLength, leaf.stemAngle, leaf.color);
+        drawLeaf(ctx, leaf);
 
         if (leaf.falling) {
           leaf.velocity.y += 0.1; // Gravity
@@ -367,7 +376,7 @@
           const dx = ball.position.x - leaf.x;
           const dy = ball.position.y - leaf.y;
           const distance = Math.sqrt(dx * dx + dy * dy);
-          if (distance < ball.circleRadius + leaf.radius) {
+          if (distance < ball.circleRadius + Math.max(leaf.width, leaf.height) / 2) {
             leaf.active = false;
             leaf.falling = true;
             leaf.velocity = {

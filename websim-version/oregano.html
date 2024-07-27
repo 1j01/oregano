@@ -81,8 +81,8 @@
   let gameActive = true;
 
   // Matter.js setup
-  const engine = Matter.Engine.create();
-  const world = engine.world;
+  let engine = Matter.Engine.create();
+  let world = engine.world;
 
   // Cannon
   const cannon = {
@@ -98,8 +98,8 @@
   let ball = null;
 
   // Stems and leaves
-  const stems = [];
-  const leaves = [];
+  let stems = [];
+  let leaves = [];
 
   // Moving target
   const target = {
@@ -112,12 +112,13 @@
     speed: 5
   };
 
-  // Create walls (only on sides)
-  const wallOptions = { isStatic: true, restitution: 0.7 };
-  Matter.World.add(world, [
-    Matter.Bodies.rectangle(0, canvas.height / 2, 10, canvas.height, wallOptions),
-    Matter.Bodies.rectangle(canvas.width, canvas.height / 2, 10, canvas.height, wallOptions)
-  ]);
+  function createWalls() {
+    const wallOptions = { isStatic: true, restitution: 0.7 };
+    return [
+      Matter.Bodies.rectangle(0, canvas.height / 2, 10, canvas.height, wallOptions),
+      Matter.Bodies.rectangle(canvas.width, canvas.height / 2, 10, canvas.height, wallOptions)
+    ];
+  }
 
   // Create stems with bezier curves
   function createStem(startX, startY, endX, endY) {
@@ -156,41 +157,48 @@
     };
   }
 
-  // Create stems and leaves
-  for (let i = 0; i < 5; i++) {
-    const stem = createStem(
-      Math.random() * (canvas.width - 400) + 200,
-      Math.random() * (canvas.height - 300) + 150,
-      Math.random() * (canvas.width - 400) + 200,
-      Math.random() * (canvas.height - 300) + 150
-    );
-    stems.push(stem);
-    Matter.World.add(world, stem.body);
+  function createStemsAndLeaves() {
+    stems = [];
+    leaves = [];
+    for (let i = 0; i < 5; i++) {
+      const stem = createStem(
+        Math.random() * (canvas.width - 400) + 200,
+        Math.random() * (canvas.height - 300) + 150,
+        Math.random() * (canvas.width - 400) + 200,
+        Math.random() * (canvas.height - 300) + 150
+      );
+      stems.push(stem);
+      Matter.World.add(world, stem.body);
 
-    for (let j = 0; j < 5; j++) {
-      const t = j / 4;
-      const x = Math.pow(1-t, 3) * stem.start.x +
-                3 * Math.pow(1-t, 2) * t * stem.control1.x +
-                3 * (1-t) * Math.pow(t, 2) * stem.control2.x +
-                Math.pow(t, 3) * stem.end.x;
-      const y = Math.pow(1-t, 3) * stem.start.y +
-                3 * Math.pow(1-t, 2) * t * stem.control1.y +
-                3 * (1-t) * Math.pow(t, 2) * stem.control2.y +
-                Math.pow(t, 3) * stem.end.y;
-      const leaf = {
-        x: x,
-        y: y - 20,
-        radius: 15,
-        color: '#228B22',
-        active: true,
-        falling: false,
-        velocity: { x: 0, y: 0 },
-        stemLength: 10,
-        stemAngle: Math.random() * Math.PI
-      };
-      leaves.push(leaf);
+      for (let j = 0; j < 5; j++) {
+        const t = j / 4;
+        const x = Math.pow(1-t, 3) * stem.start.x +
+                  3 * Math.pow(1-t, 2) * t * stem.control1.x +
+                  3 * (1-t) * Math.pow(t, 2) * stem.control2.x +
+                  Math.pow(t, 3) * stem.end.x;
+        const y = Math.pow(1-t, 3) * stem.start.y +
+                  3 * Math.pow(1-t, 2) * t * stem.control1.y +
+                  3 * (1-t) * Math.pow(t, 2) * stem.control2.y +
+                  Math.pow(t, 3) * stem.end.y;
+        const leaf = {
+          x: x,
+          y: y - 20,
+          radius: 15,
+          color: '#228B22',
+          active: true,
+          falling: false,
+          velocity: { x: 0, y: 0 },
+          stemLength: 20,
+          stemAngle: Math.random() * Math.PI
+        };
+        leaves.push(leaf);
+      }
     }
   }
+
+  // Initial game setup
+  Matter.World.add(world, createWalls());
+  createStemsAndLeaves();
 
   // Mouse control
   canvas.addEventListener('mousemove', (event) => {
@@ -238,21 +246,31 @@
   }
 
   function restartGame() {
+    // Reset game state
     score = 0;
     ballsLeft = 5;
     gameActive = true;
     updateScore(0);
     updateBallsLeft();
     gameOverElement.style.display = 'none';
+
+    // Clear existing world
+    Matter.World.clear(world);
+    Matter.Engine.clear(engine);
+
+    // Create new world and engine
+    engine = Matter.Engine.create();
+    world = engine.world;
+
+    // Recreate game elements
+    Matter.World.add(world, createWalls());
+    createStemsAndLeaves();
+
+    // Remove existing ball
     if (ball) {
       Matter.World.remove(world, ball);
       ball = null;
     }
-    leaves.forEach(leaf => {
-      leaf.active = true;
-      leaf.falling = false;
-      leaf.velocity = { x: 0, y: 0 };
-    });
   }
 
   function resetBall() {
@@ -269,6 +287,30 @@
 
   restartButton.addEventListener('click', restartGame);
   resetBallButton.addEventListener('click', resetBall);
+
+  function drawPointedLeaf(ctx, x, y, radius, stemLength, stemAngle, color) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(stemAngle);
+
+    // Draw stem
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(0, stemLength);
+    ctx.strokeStyle = '#8B4513';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Draw pointed leaf
+    ctx.beginPath();
+    ctx.moveTo(0, stemLength);
+    ctx.quadraticCurveTo(radius, stemLength + radius / 2, 0, stemLength + radius * 2);
+    ctx.quadraticCurveTo(-radius, stemLength + radius / 2, 0, stemLength);
+    ctx.fillStyle = color;
+    ctx.fill();
+
+    ctx.restore();
+  }
 
   function gameLoop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -310,22 +352,7 @@
     // Update leaves
     leaves.forEach(leaf => {
       if (leaf.active || leaf.falling) {
-        // Draw leaf stem
-        ctx.beginPath();
-        ctx.moveTo(leaf.x, leaf.y);
-        ctx.lineTo(
-          leaf.x + Math.cos(leaf.stemAngle) * leaf.stemLength,
-          leaf.y + Math.sin(leaf.stemAngle) * leaf.stemLength
-        );
-        ctx.strokeStyle = '#8B4513';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-
-        // Draw leaf
-        ctx.beginPath();
-        ctx.arc(leaf.x, leaf.y, leaf.radius, 0, Math.PI * 2);
-        ctx.fillStyle = leaf.color;
-        ctx.fill();
+        drawPointedLeaf(ctx, leaf.x, leaf.y, leaf.radius, leaf.stemLength, leaf.stemAngle, leaf.color);
 
         if (leaf.falling) {
           leaf.velocity.y += 0.1; // Gravity

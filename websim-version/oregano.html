@@ -104,12 +104,11 @@
     speed: 5
   };
 
-  // Create walls
-  const wallOptions = { isStatic: true, restitution: 1 };
+  // Create walls (only on sides)
+  const wallOptions = { isStatic: true, restitution: 0.7 };
   Matter.World.add(world, [
     Matter.Bodies.rectangle(0, canvas.height / 2, 10, canvas.height, wallOptions),
-    Matter.Bodies.rectangle(canvas.width, canvas.height / 2, 10, canvas.height, wallOptions),
-    Matter.Bodies.rectangle(canvas.width / 2, canvas.height, canvas.width, 10, wallOptions)
+    Matter.Bodies.rectangle(canvas.width, canvas.height / 2, 10, canvas.height, wallOptions)
   ]);
 
   // Create stems with bezier curves
@@ -119,7 +118,28 @@
     const controlPoint2X = startX + 2 * (endX - startX) / 3;
     const controlPoint2Y = endY + Math.random() * 100 - 50;
 
+    const points = [];
+    for (let t = 0; t <= 1; t += 0.1) {
+      const x = Math.pow(1-t, 3) * startX +
+                3 * Math.pow(1-t, 2) * t * controlPoint1X +
+                3 * (1-t) * Math.pow(t, 2) * controlPoint2X +
+                Math.pow(t, 3) * endX;
+      const y = Math.pow(1-t, 3) * startY +
+                3 * Math.pow(1-t, 2) * t * controlPoint1Y +
+                3 * (1-t) * Math.pow(t, 2) * controlPoint2Y +
+                Math.pow(t, 3) * endY;
+      points.push({ x, y });
+    }
+
+    const stemBody = Matter.Bodies.fromVertices(
+      (startX + endX) / 2,
+      (startY + endY) / 2,
+      [points],
+      { isStatic: true, restitution: 0.7 }
+    );
+
     return {
+      body: stemBody,
       start: { x: startX, y: startY },
       end: { x: endX, y: endY },
       control1: { x: controlPoint1X, y: controlPoint1Y },
@@ -136,6 +156,7 @@
       Math.random() * (canvas.height - 300) + 150
     );
     stems.push(stem);
+    Matter.World.add(world, stem.body);
 
     for (let j = 0; j < 5; j++) {
       const t = j / 4;
@@ -150,8 +171,7 @@
       const leaf = {
         x: x,
         y: y - 20,
-        width: 20,
-        height: 30,
+        radius: 15,
         color: '#228B22',
         active: true
       };
@@ -256,14 +276,16 @@
     // Update leaves
     leaves.forEach(leaf => {
       if (leaf.active) {
+        ctx.beginPath();
+        ctx.arc(leaf.x, leaf.y, leaf.radius, 0, Math.PI * 2);
         ctx.fillStyle = leaf.color;
-        ctx.fillRect(leaf.x - leaf.width / 2, leaf.y - leaf.height / 2, leaf.width, leaf.height);
+        ctx.fill();
 
         if (ball !== null) {
           const dx = ball.position.x - leaf.x;
           const dy = ball.position.y - leaf.y;
           const distance = Math.sqrt(dx * dx + dy * dy);
-          if (distance < 20) {
+          if (distance < ball.circleRadius + leaf.radius) {
             leaf.active = false;
             updateScore(10);
           }

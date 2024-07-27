@@ -183,8 +183,7 @@
         const leaf = {
           x: x,
           y: y,
-          width: 30,
-          height: 40,
+          radius: 20,
           color: '#228B22',
           active: true,
           falling: false,
@@ -222,8 +221,8 @@
         friction: 0.001
       });
       Matter.Body.applyForce(ball, ball.position, {
-        x: Math.cos(cannon.angle) * 0.05,
-        y: Math.sin(cannon.angle) * 0.05
+        x: Math.cos(cannon.angle) * 0.03, // Reduced velocity
+        y: Math.sin(cannon.angle) * 0.03  // Reduced velocity
       });
       Matter.World.add(world, ball);
       ballsLeft--;
@@ -302,17 +301,17 @@
     ctx.lineWidth = 2;
     ctx.stroke();
 
-    // Draw leaf
+    // Draw slightly pointed, almost circular leaf
     ctx.beginPath();
     ctx.moveTo(0, leaf.stemLength);
     ctx.bezierCurveTo(
-      leaf.width / 2, leaf.stemLength,
-      leaf.width / 2, leaf.stemLength + leaf.height,
-      0, leaf.stemLength + leaf.height
+      leaf.radius, leaf.stemLength,
+      leaf.radius * 1.2, leaf.stemLength + leaf.radius * 1.5,
+      0, leaf.stemLength + leaf.radius * 2.2
     );
     ctx.bezierCurveTo(
-      -leaf.width / 2, leaf.stemLength + leaf.height,
-      -leaf.width / 2, leaf.stemLength,
+      -leaf.radius * 1.2, leaf.stemLength + leaf.radius * 1.5,
+      -leaf.radius, leaf.stemLength,
       0, leaf.stemLength
     );
     ctx.fillStyle = leaf.color;
@@ -376,7 +375,7 @@
           const dx = ball.position.x - leaf.x;
           const dy = ball.position.y - leaf.y;
           const distance = Math.sqrt(dx * dx + dy * dy);
-          if (distance < ball.circleRadius + Math.max(leaf.width, leaf.height) / 2) {
+          if (distance < ball.circleRadius + leaf.radius) {
             leaf.active = false;
             leaf.falling = true;
             leaf.velocity = {

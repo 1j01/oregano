@@ -114,6 +114,7 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.18.0/matter.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
 <script>
   const canvas = document.getElementById('gameCanvas');
   const ctx = canvas.getContext('2d');
@@ -146,68 +147,95 @@
   let currentLevel = 1;
   const maxLevels = 3;
 
-  // Web Audio API setup
-  const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  // Tone.js setup
+  const synth = new Tone.PolySynth(Tone.Synth).toDestination();
+  const noise = new Tone.Noise("brown").toDestination();
+  noise.volume.value = -10;
 
-  function createOscillator(frequency, duration) {
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
-    
-    oscillator.type = 'sine';
-    oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
-    
-    gainNode.gain.setValueAtTime(0.5, audioContext.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
-    
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-    
-    oscillator.start();
-    oscillator.stop(audioContext.currentTime + duration);
-  }
+  const chorus = new Tone.Chorus({
+    frequency: 1.5,
+    delayTime: 3.5,
+    depth: 0.7,
+    type: "sine",
+    spread: 180
+  }).toDestination();
+
+  const reverb = new Tone.Reverb({
+    decay: 2,
+    preDelay: 0.1
+  }).toDestination();
+
+  const choralSynth = new Tone.PolySynth(Tone.FMSynth, {
+    harmonicity: 2,
+    modulationIndex: 10,
+    oscillator: {
+      type: "sine"
+    },
+    envelope: {
+      attack: 0.01,
+      decay: 0.2,
+      sustain: 0.8,
+      release: 1.5
+    },
+    modulation: {
+      type: "square"
+    },
+    modulationEnvelope: {
+      attack: 0.5,
+      decay: 0,
+      sustain: 1,
+      release: 0.5
+    }
+  }).connect(chorus).connect(reverb);
 
   function playLeafCollectSound() {
     const baseFrequency = 300;
     const frequency = baseFrequency + (leafCollectedThisShot * 50);
-    createOscillator(frequency, 0.2);
+    synth.triggerAttackRelease(frequency, "8n");
   }
 
   function playFireSound() {
-    createOscillator(150, 0.3);
+    synth.triggerAttackRelease("C2", "8n");
   }
 
   function playExtraBallSound() {
-    createOscillator(400, 0.5);
+    synth.triggerAttackRelease("C5", "8n");
   }
 
   function playTotalMissSound() {
-    createOscillator(100, 0.5);
+    synth.triggerAttackRelease("C3", "8n");
   }
 
   function playGameOverSound() {
-    createOscillator(200, 1);
+    synth.triggerAttackRelease("C4", "4n");
   }
 
   function playStemFallSound() {
-    createOscillator(250, 0.8);
+    noise.start();
+    noise.stop("+0.5");
   }
 
   function playLevelCompleteSound() {
-    createOscillator(500, 1);
+    synth.triggerAttackRelease("C6", "4n");
   }
 
   function playGameWinSound() {
-    createOscillator(600, 1.5);
+    synth.triggerAttackRelease(["C4", "E4", "G4"], "4n");
+  }
+
+  function playCatcherSound() {
+    const notes = ["C4", "E4", "G4", "B4"];
+    notes.forEach((note, index) => {
+      setTimeout(() => {
+        choralSynth.triggerAttackRelease(note, "2n");
+      }, index * 100);
+    });
   }
 
   soundToggle.addEventListener('click', () => {
     soundEnabled = !soundEnabled;
     soundToggle.textContent = soundEnabled ? '🔊' : '🔇';
-    if (soundEnabled) {
-      audioContext.resume();
-    } else {
-      audioContext.suspend();
-    }
+    Tone.Master.mute = !soundEnabled;
   });
 
   // Matter.js setup
@@ -251,8 +279,8 @@
 
   // Bounce triangles
   const triangleSize = 30;
-  const leftTriangle = Matter.Bodies.polygon(target.x - target.width / 2 - triangleSize / 2, target.y - triangleSize, 3, triangleSize, { isStatic: true, angle: Math.PI });
-  const rightTriangle = Matter.Bodies.polygon(target.x + target.width / 2 + triangleSize / 2, target.y - triangleSize, 3, triangleSize, { isStatic: true, angle: Math.PI });
+  const leftTriangle = Matter.Bodies.polygon(target.x - target.width / 2 - triangleSize / 2, target.y - triangleSize, 3, triangleSize, { isStatic: true, angle: 0 });
+  const rightTriangle = Matter.Bodies.polygon(target.x + target.width / 2 + triangleSize / 2, target.y - triangleSize, 3, triangleSize, { isStatic: true, angle: 0 });
   Matter.World.add(world, [leftTriangle, rightTriangle]);
 
   function createWalls() {
@@ -776,7 +804,7 @@
       ballsLeft++;
       updateBallsLeft();
       showMessage(extraBallMessage);
-      if (soundEnabled) playExtraBallSound();
+      if (soundEnabled) playCatcherSound();
     }
 
     Matter.Engine.update(engine);

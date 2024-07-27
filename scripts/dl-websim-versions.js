@@ -149,14 +149,32 @@ This explains why it was colliding with the empty space near the stems.`,
 		"prompt": "Add angle: Math.PI / 2 to triangles",
 		"id": "LXFnubGCibmKSbvP8"
 	},
-	{
-		"commitSummary": "Tweak sound effects for stems falling and level win",
-		"commitNote": `Note:
-I ran into the limit of the AI's willingness to reproduce existing unchanged code.`,
-		"prompt": "For the stem falling, play a bunch of separate cracks/pops, for a better crunchier sound.\nFor the level win, play a set of choral ascending arpeggios.",
-		"id": "pFo63qPDtjfeDCGqP"
-	},
+// 	{
+// 		"commitSummary": "Tweak sound effects for stems falling and level win",
+// 		"commitNote": `Note:
+// I ran into the limit of the AI's willingness to reproduce existing unchanged code.`,
+// 		"prompt": "For the stem falling, play a bunch of separate cracks/pops, for a better crunchier sound.\nFor the level win, play a set of choral ascending arpeggios.",
+// 		"id": "pFo63qPDtjfeDCGqP"
+// 	},
 	// ------------
+	{
+		"commitSummary": "Add multiplier & goal leaves, and improve SFX",
+		"commitNote": `Note:
+I was running up against the AI's willingness to output unchanged code,
+rather than eliding it, so I had to tell it to change more at once.
+I had to use the "!continue" command in websim for the first time,
+since the output was getting long.
+Also, the multiplier leaf doesn't change every shot like I wanted.
+I guess "turn" was a bit of a weird turn of phrase... no pun intended!`,
+		"prompt": `- For the stem falling, play a bunch of separate cracks/pops, for a better crunchier sound, and to fix an error when multiple stems are broken at once.
+- For the level win, play a series of choral ascending arpeggios.
+- Rename the "target" the "catcher".
+- Move the triangles of the catcher down so they're flush with the bottom.
+- Add a debug mode for the physics.
+- Pick a random leaf each turn that will increase a score multiplier if collected (purple)
+- Pick a random set of leaves at the start of the level that are required to pass the level (orange)`,
+		"id": "DbDNRR7MGycY8NBex",
+	},
 ];
 
 async function downloadVersions(versions, outputDirectory, outputFileName) {

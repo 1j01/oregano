@@ -102,14 +102,16 @@
   // Cannon
   const cannon = {
     x: canvas.width / 2,
-    y: 50,
+    y: 80,
     angle: 0,
     width: 60,
-    height: 100,
-    baseWidth: 80,
-    baseHeight: 40,
-    color: '#444',
-    barrelColor: '#666'
+    height: 120,
+    baseWidth: 100,
+    baseHeight: 60,
+    color: '#333',
+    barrelColor: '#555',
+    rimColor: '#777',
+    wheelColor: '#222'
   };
 
   // Ball
@@ -141,9 +143,9 @@
   // Create stems with bezier curves
   function createStem(startX, startY, endX, endY) {
     const controlPoint1X = startX + (endX - startX) / 3;
-    const controlPoint1Y = startY + Math.random() * 150 - 75; // Increased range
+    const controlPoint1Y = startY + Math.random() * 150 - 75;
     const controlPoint2X = startX + 2 * (endX - startX) / 3;
-    const controlPoint2Y = endY + Math.random() * 150 - 75; // Increased range
+    const controlPoint2Y = endY + Math.random() * 150 - 75;
 
     const points = [];
     for (let t = 0; t <= 1; t += 0.05) {
@@ -188,9 +190,9 @@
 
       do {
         startX = i * sectionWidth + Math.random() * (sectionWidth - 100);
-        startY = Math.random() * (canvas.height - 400) + 150; // Increased range
-        endX = startX + Math.random() * 150 + 75; // Increased range
-        endY = startY + (Math.random() - 0.5) * 300; // Increased range
+        startY = Math.random() * (canvas.height - 400) + 150;
+        endX = startX + Math.random() * 150 + 75;
+        endY = startY + (Math.random() - 0.5) * 300;
         attempts++;
       } while (checkStemOverlap(startX, startY, endX, endY) && attempts < maxAttempts);
 
@@ -265,7 +267,10 @@
   function fireBall() {
     if (ball === null && ballsLeft > 0) {
       const ballRadius = 15;
-      ball = Matter.Bodies.circle(cannon.x, cannon.y + cannon.height / 2, ballRadius, {
+      const barrelEndX = cannon.x + Math.cos(cannon.angle) * cannon.height;
+      const barrelEndY = cannon.y + Math.sin(cannon.angle) * cannon.height;
+      
+      ball = Matter.Bodies.circle(barrelEndX, barrelEndY, ballRadius, {
         restitution: 0.7,
         friction: 0.001
       });
@@ -384,6 +389,15 @@
     ctx.save();
     ctx.translate(cannon.x, cannon.y);
     
+    // Draw wheels
+    ctx.fillStyle = cannon.wheelColor;
+    ctx.beginPath();
+    ctx.arc(-cannon.baseWidth / 3, cannon.baseHeight / 2, cannon.baseHeight / 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(cannon.baseWidth / 3, cannon.baseHeight / 2, cannon.baseHeight / 4, 0, Math.PI * 2);
+    ctx.fill();
+
     // Draw base
     ctx.fillStyle = cannon.color;
     ctx.beginPath();
@@ -391,11 +405,16 @@
     ctx.fill();
 
     // Draw barrel
-    ctx.rotate(cannon.angle - Math.PI / 2); // Adjusted angle
+    ctx.rotate(cannon.angle - Math.PI / 2);
     ctx.fillStyle = cannon.barrelColor;
     ctx.fillRect(-cannon.width / 2, 0, cannon.width, cannon.height);
 
-    // Draw barrel end
+    // Draw barrel rim
+    ctx.fillStyle = cannon.rimColor;
+    ctx.beginPath();
+    ctx.arc(0, cannon.height, cannon.width / 2 + 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = cannon.barrelColor;
     ctx.beginPath();
     ctx.arc(0, cannon.height, cannon.width / 2, 0, Math.PI * 2);
     ctx.fill();

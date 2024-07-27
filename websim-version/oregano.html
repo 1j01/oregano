@@ -50,19 +50,20 @@
     left: 10px;
     background-color: #f44336;
   }
-  #extraBallMessage {
+  #extraBallMessage, #totalMissMessage {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
     font-size: 36px;
-    color: #FFD700;
     font-weight: bold;
     text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
     display: none;
     opacity: 0;
     transition: opacity 0.5s ease-in-out;
   }
+  #extraBallMessage { color: #FFD700; }
+  #totalMissMessage { color: #FF4500; }
 </style>
 
 <canvas id="gameCanvas"></canvas>
@@ -75,6 +76,7 @@
   <button id="restartButton">Restart</button>
 </div>
 <div id="extraBallMessage">Extra Ball!</div>
+<div id="totalMissMessage">Total Miss - Free Ball!</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.18.0/matter.min.js"></script>
 <script>
@@ -87,6 +89,7 @@
   const restartButton = document.getElementById('restartButton');
   const resetBallButton = document.getElementById('resetBallButton');
   const extraBallMessage = document.getElementById('extraBallMessage');
+  const totalMissMessage = document.getElementById('totalMissMessage');
 
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
@@ -94,6 +97,7 @@
   let score = 0;
   let ballsLeft = 10;
   let gameActive = true;
+  let lastBallScore = 0;
 
   // Matter.js setup
   let engine = Matter.Engine.create();
@@ -124,7 +128,7 @@
   // Moving target
   const target = {
     x: canvas.width / 2,
-    y: canvas.height - 20,
+    y: canvas.height,
     width: 200,
     height: 20,
     color: '#00FF00',
@@ -134,8 +138,8 @@
 
   // Bounce triangles
   const triangleSize = 40;
-  const leftTriangle = Matter.Bodies.polygon(target.x - target.width / 2 - triangleSize / 2, target.y - triangleSize / 2, 3, triangleSize, { isStatic: true, angle: Math.PI / 2 });
-  const rightTriangle = Matter.Bodies.polygon(target.x + target.width / 2 + triangleSize / 2, target.y - triangleSize / 2, 3, triangleSize, { isStatic: true, angle: -Math.PI / 2 });
+  const leftTriangle = Matter.Bodies.polygon(target.x - target.width / 2 - triangleSize / 2, target.y - triangleSize, 3, triangleSize, { isStatic: true, angle: 0 });
+  const rightTriangle = Matter.Bodies.polygon(target.x + target.width / 2 + triangleSize / 2, target.y - triangleSize, 3, triangleSize, { isStatic: true, angle: 0 });
   Matter.World.add(world, [leftTriangle, rightTriangle]);
 
   function createWalls() {
@@ -287,6 +291,7 @@
       Matter.World.add(world, ball);
       ballsLeft--;
       updateBallsLeft();
+      lastBallScore = score;
     }
   }
 
@@ -299,13 +304,13 @@
     ballsLeftElement.textContent = `Balls: ${ballsLeft}`;
   }
 
-  function showExtraBallMessage() {
-    extraBallMessage.style.display = 'block';
-    extraBallMessage.style.opacity = '1';
+  function showMessage(messageElement) {
+    messageElement.style.display = 'block';
+    messageElement.style.opacity = '1';
     setTimeout(() => {
-      extraBallMessage.style.opacity = '0';
+      messageElement.style.opacity = '0';
       setTimeout(() => {
-        extraBallMessage.style.display = 'none';
+        messageElement.style.display = 'none';
       }, 500);
     }, 1500);
   }
@@ -319,6 +324,7 @@
   function restartGame() {
     // Reset game state
     score = 0;
+    lastBallScore = 0;
     ballsLeft = 10;
     gameActive = true;
     updateScore(0);
@@ -456,11 +462,11 @@
         ball = null;
         if (ballsLeft === 0) {
           endGame();
-        } else if (score === 0) {
+        } else if (score === lastBallScore) {
           // Total Miss - Free Ball condition
           ballsLeft++;
           updateBallsLeft();
-          showExtraBallMessage();
+          showMessage(totalMissMessage);
         }
       }
     }
@@ -512,27 +518,27 @@
       target.direction *= -1;
     }
     ctx.fillStyle = target.color;
-    ctx.fillRect(target.x - target.width / 2, target.y - target.height / 2, target.width, target.height);
+    ctx.fillRect(target.x - target.width / 2, target.y - target.height, target.width, target.height);
 
     // Draw bounce triangles
     drawTriangle(ctx, leftTriangle);
     drawTriangle(ctx, rightTriangle);
 
     // Update triangle positions
-    Matter.Body.setPosition(leftTriangle, { x: target.x - target.width / 2 - triangleSize / 2, y: target.y - triangleSize / 2 });
-    Matter.Body.setPosition(rightTriangle, { x: target.x + target.width / 2 + triangleSize / 2, y: target.y - triangleSize / 2 });
+    Matter.Body.setPosition(leftTriangle, { x: target.x - target.width / 2 - triangleSize / 2, y: target.y - triangleSize });
+    Matter.Body.setPosition(rightTriangle, { x: target.x + target.width / 2 + triangleSize / 2, y: target.y - triangleSize });
 
     // Check if ball hits target
     if (ball !== null && 
         ball.position.x > target.x - target.width / 2 &&
         ball.position.x < target.x + target.width / 2 &&
-        ball.position.y > target.y - target.height / 2 &&
-        ball.position.y < target.y + target.height / 2) {
+        ball.position.y > target.y - target.height &&
+        ball.position.y < target.y) {
       Matter.World.remove(world, ball);
       ball = null;
       ballsLeft++;
       updateBallsLeft();
-      showExtraBallMessage();
+      showMessage(extraBallMessage);
     }
 
     Matter.Engine.update(engine);

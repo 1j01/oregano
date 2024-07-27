@@ -104,14 +104,14 @@
     x: canvas.width / 2,
     y: 80,
     angle: 0,
-    width: 60,
-    height: 120,
-    baseWidth: 100,
+    width: 80,
+    height: 100,
+    baseWidth: 120,
     baseHeight: 60,
-    color: '#333',
-    barrelColor: '#555',
-    rimColor: '#777',
-    wheelColor: '#222'
+    color: '#444',
+    barrelColor: '#666',
+    rimColor: '#888',
+    wheelColor: '#333'
   };
 
   // Ball
@@ -131,6 +131,12 @@
     direction: 1,
     speed: 5
   };
+
+  // Bounce triangles
+  const triangleSize = 40;
+  const leftTriangle = Matter.Bodies.polygon(target.x - target.width / 2 - triangleSize / 2, target.y - triangleSize / 2, 3, triangleSize, { isStatic: true, angle: Math.PI / 2 });
+  const rightTriangle = Matter.Bodies.polygon(target.x + target.width / 2 + triangleSize / 2, target.y - triangleSize / 2, 3, triangleSize, { isStatic: true, angle: -Math.PI / 2 });
+  Matter.World.add(world, [leftTriangle, rightTriangle]);
 
   function createWalls() {
     const wallOptions = { isStatic: true, restitution: 0.7 };
@@ -331,6 +337,9 @@
     Matter.World.add(world, createWalls());
     createStemsAndLeaves();
 
+    // Recreate bounce triangles
+    Matter.World.add(world, [leftTriangle, rightTriangle]);
+
     // Remove existing ball
     if (ball) {
       Matter.World.remove(world, ball);
@@ -389,6 +398,12 @@
     ctx.save();
     ctx.translate(cannon.x, cannon.y);
     
+    // Draw base
+    ctx.fillStyle = cannon.color;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, cannon.baseWidth / 2, cannon.baseHeight / 2, 0, 0, Math.PI * 2);
+    ctx.fill();
+
     // Draw wheels
     ctx.fillStyle = cannon.wheelColor;
     ctx.beginPath();
@@ -396,12 +411,6 @@
     ctx.fill();
     ctx.beginPath();
     ctx.arc(cannon.baseWidth / 3, cannon.baseHeight / 2, cannon.baseHeight / 4, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Draw base
-    ctx.fillStyle = cannon.color;
-    ctx.beginPath();
-    ctx.ellipse(0, 0, cannon.baseWidth / 2, cannon.baseHeight / 2, 0, 0, Math.PI * 2);
     ctx.fill();
 
     // Draw barrel
@@ -412,14 +421,21 @@
     // Draw barrel rim
     ctx.fillStyle = cannon.rimColor;
     ctx.beginPath();
-    ctx.arc(0, cannon.height, cannon.width / 2 + 5, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = cannon.barrelColor;
-    ctx.beginPath();
-    ctx.arc(0, cannon.height, cannon.width / 2, 0, Math.PI * 2);
+    ctx.arc(0, 0, cannon.width / 2 + 5, 0, Math.PI, true);
     ctx.fill();
 
     ctx.restore();
+  }
+
+  function drawTriangle(ctx, triangle) {
+    const vertices = triangle.vertices;
+    ctx.beginPath();
+    ctx.moveTo(vertices[0].x, vertices[0].y);
+    ctx.lineTo(vertices[1].x, vertices[1].y);
+    ctx.lineTo(vertices[2].x, vertices[2].y);
+    ctx.closePath();
+    ctx.fillStyle = '#FFA500';
+    ctx.fill();
   }
 
   function gameLoop() {
@@ -440,6 +456,11 @@
         ball = null;
         if (ballsLeft === 0) {
           endGame();
+        } else if (score === 0) {
+          // Total Miss - Free Ball condition
+          ballsLeft++;
+          updateBallsLeft();
+          showExtraBallMessage();
         }
       }
     }
@@ -492,6 +513,14 @@
     }
     ctx.fillStyle = target.color;
     ctx.fillRect(target.x - target.width / 2, target.y - target.height / 2, target.width, target.height);
+
+    // Draw bounce triangles
+    drawTriangle(ctx, leftTriangle);
+    drawTriangle(ctx, rightTriangle);
+
+    // Update triangle positions
+    Matter.Body.setPosition(leftTriangle, { x: target.x - target.width / 2 - triangleSize / 2, y: target.y - triangleSize / 2 });
+    Matter.Body.setPosition(rightTriangle, { x: target.x + target.width / 2 + triangleSize / 2, y: target.y - triangleSize / 2 });
 
     // Check if ball hits target
     if (ball !== null && 

@@ -34,7 +34,7 @@
     text-align: center;
     display: none;
   }
-  #restartButton {
+  #restartButton, #resetBallButton {
     margin-top: 20px;
     padding: 10px 20px;
     font-size: 18px;
@@ -44,11 +44,18 @@
     border-radius: 5px;
     cursor: pointer;
   }
+  #resetBallButton {
+    position: absolute;
+    top: 70px;
+    left: 10px;
+    background-color: #f44336;
+  }
 </style>
 
 <canvas id="gameCanvas"></canvas>
 <div id="score">Score: 0</div>
 <div id="ballsLeft">Balls: 5</div>
+<button id="resetBallButton">Reset Ball</button>
 <div id="gameOver">
   <h2>Game Over</h2>
   <p>Your score: <span id="finalScore"></span></p>
@@ -64,6 +71,7 @@
   const gameOverElement = document.getElementById('gameOver');
   const finalScoreElement = document.getElementById('finalScore');
   const restartButton = document.getElementById('restartButton');
+  const resetBallButton = document.getElementById('resetBallButton');
 
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
@@ -173,7 +181,11 @@
         y: y - 20,
         radius: 15,
         color: '#228B22',
-        active: true
+        active: true,
+        falling: false,
+        velocity: { x: 0, y: 0 },
+        stemLength: 10,
+        stemAngle: Math.random() * Math.PI
       };
       leaves.push(leaf);
     }
@@ -189,6 +201,10 @@
 
   canvas.addEventListener('click', () => {
     if (!gameActive) return;
+    fireBall();
+  });
+
+  function fireBall() {
     if (ball === null && ballsLeft > 0) {
       const ballRadius = 15;
       ball = Matter.Bodies.circle(cannon.x, cannon.y, ballRadius, {
@@ -203,7 +219,7 @@
       ballsLeft--;
       updateBallsLeft();
     }
-  });
+  }
 
   function updateScore(points) {
     score += points;
@@ -231,10 +247,27 @@
       Matter.World.remove(world, ball);
       ball = null;
     }
-    leaves.forEach(leaf => leaf.active = true);
+    leaves.forEach(leaf => {
+      leaf.active = true;
+      leaf.falling = false;
+      leaf.velocity = { x: 0, y: 0 };
+    });
+  }
+
+  function resetBall() {
+    if (ball) {
+      Matter.World.remove(world, ball);
+      ball = null;
+      ballsLeft--;
+      updateBallsLeft();
+      if (ballsLeft === 0) {
+        endGame();
+      }
+    }
   }
 
   restartButton.addEventListener('click', restartGame);
+  resetBallButton.addEventListener('click', resetBall);
 
   function gameLoop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -275,18 +308,44 @@
 
     // Update leaves
     leaves.forEach(leaf => {
-      if (leaf.active) {
+      if (leaf.active || leaf.falling) {
+        // Draw leaf stem
+        ctx.beginPath();
+        ctx.moveTo(leaf.x, leaf.y);
+        ctx.lineTo(
+          leaf.x + Math.cos(leaf.stemAngle) * leaf.stemLength,
+          leaf.y + Math.sin(leaf.stemAngle) * leaf.stemLength
+        );
+        ctx.strokeStyle = '#8B4513';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Draw leaf
         ctx.beginPath();
         ctx.arc(leaf.x, leaf.y, leaf.radius, 0, Math.PI * 2);
         ctx.fillStyle = leaf.color;
         ctx.fill();
 
-        if (ball !== null) {
+        if (leaf.falling) {
+          leaf.velocity.y += 0.1; // Gravity
+          leaf.x += leaf.velocity.x;
+          leaf.y += leaf.velocity.y;
+          leaf.stemAngle += 0.1; // Rotate the stem as it falls
+
+          if (leaf.y > canvas.height) {
+            leaf.falling = false;
+          }
+        } else if (leaf.active && ball !== null) {
           const dx = ball.position.x - leaf.x;
           const dy = ball.position.y - leaf.y;
           const distance = Math.sqrt(dx * dx + dy * dy);
           if (distance < ball.circleRadius + leaf.radius) {
             leaf.active = false;
+            leaf.falling = true;
+            leaf.velocity = {
+              x: (Math.random() - 0.5) * 2,
+              y: -2 - Math.random() * 2
+            };
             updateScore(10);
           }
         }

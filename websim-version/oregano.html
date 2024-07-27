@@ -228,7 +228,7 @@
     ];
   }
 
-  // Create stems with bezier curves
+  // Create stems with bezier curves and physics bodies
   function createStem(startX, startY, endX, endY) {
     const controlPoint1X = startX + (endX - startX) / 3;
     const controlPoint1Y = startY + Math.random() * 120 - 60;
@@ -236,7 +236,11 @@
     const controlPoint2Y = endY + Math.random() * 120 - 60;
 
     const points = [];
-    for (let t = 0; t <= 1; t += 0.05) {
+    const numSegments = 50;
+    const stemBodies = [];
+
+    for (let i = 0; i <= numSegments; i++) {
+      const t = i / numSegments;
       const x = Math.pow(1-t, 3) * startX +
                 3 * Math.pow(1-t, 2) * t * controlPoint1X +
                 3 * (1-t) * Math.pow(t, 2) * controlPoint2X +
@@ -245,18 +249,35 @@
                 3 * Math.pow(1-t, 2) * t * controlPoint1Y +
                 3 * (1-t) * Math.pow(t, 2) * controlPoint2Y +
                 Math.pow(t, 3) * endY;
-      points.push(Matter.Vector.create(x, y));
+      points.push({ x, y });
+
+      if (i > 0) {
+        const prevPoint = points[i - 1];
+        const currentPoint = points[i];
+        const angle = Math.atan2(currentPoint.y - prevPoint.y, currentPoint.x - prevPoint.x);
+        const length = Math.sqrt(Math.pow(currentPoint.x - prevPoint.x, 2) + Math.pow(currentPoint.y - prevPoint.y, 2));
+        const width = 5; // Adjust this value to change stem thickness
+
+        const stemSegment = Matter.Bodies.rectangle(
+          (prevPoint.x + currentPoint.x) / 2,
+          (prevPoint.y + currentPoint.y) / 2,
+          length,
+          width,
+          {
+            isStatic: true,
+            angle: angle,
+            render: { fillStyle: '#8B4513' }
+          }
+        );
+
+        stemBodies.push(stemSegment);
+      }
     }
 
-    const stemBody = Matter.Bodies.fromVertices(
-      (startX + endX) / 2,
-      (startY + endY) / 2,
-      [points],
-      { isStatic: true, restitution: 0.7 }
-    );
+    Matter.World.add(world, stemBodies);
 
     return {
-      body: stemBody,
+      bodies: stemBodies,
       start: { x: startX, y: startY },
       end: { x: endX, y: endY },
       control1: { x: controlPoint1X, y: controlPoint1Y },
@@ -287,7 +308,6 @@
       if (attempts < maxAttempts) {
         const stem = createStem(startX, startY, endX, endY);
         stems.push(stem);
-        Matter.World.add(world, stem.body);
 
         for (let j = 0; j < 4; j++) {
           const t = j / 3;
@@ -558,13 +578,15 @@
     }
 
     // Update stems
-    ctx.strokeStyle = '#8B4513';
-    ctx.lineWidth = 5;
     stems.forEach(stem => {
-      ctx.beginPath();
-      ctx.moveTo(stem.start.x, stem.start.y);
-      ctx.bezierCurveTo(stem.control1.x, stem.control1.y, stem.control2.x, stem.control2.y, stem.end.x, stem.end.y);
-      ctx.stroke();
+      stem.bodies.forEach(body => {
+        ctx.save();
+        ctx.translate(body.position.x, body.position.y);
+        ctx.rotate(body.angle);
+        ctx.fillStyle = '#8B4513';
+        ctx.fillRect(-body.bounds.max.x + body.bounds.min.x, -2.5, body.bounds.max.x - body.bounds.min.x, 5);
+        ctx.restore();
+      });
     });
 
     // Update leaves

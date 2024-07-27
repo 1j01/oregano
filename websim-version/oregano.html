@@ -127,7 +127,7 @@
     const controlPoint2Y = endY + Math.random() * 100 - 50;
 
     const points = [];
-    for (let t = 0; t <= 1; t += 0.1) {
+    for (let t = 0; t <= 1; t += 0.05) {
       const x = Math.pow(1-t, 3) * startX +
                 3 * Math.pow(1-t, 2) * t * controlPoint1X +
                 3 * (1-t) * Math.pow(t, 2) * controlPoint2X +
@@ -136,7 +136,7 @@
                 3 * Math.pow(1-t, 2) * t * controlPoint1Y +
                 3 * (1-t) * Math.pow(t, 2) * controlPoint2Y +
                 Math.pow(t, 3) * endY;
-      points.push({ x, y });
+      points.push(Matter.Vector.create(x, y));
     }
 
     const stemBody = Matter.Bodies.fromVertices(
@@ -151,7 +151,8 @@
       start: { x: startX, y: startY },
       end: { x: endX, y: endY },
       control1: { x: controlPoint1X, y: controlPoint1Y },
-      control2: { x: controlPoint2X, y: controlPoint2Y }
+      control2: { x: controlPoint2X, y: controlPoint2Y },
+      points: points
     };
   }
 

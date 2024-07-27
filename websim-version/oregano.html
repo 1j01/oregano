@@ -166,6 +166,10 @@
     createOscillator(200, 1);
   }
 
+  function playStemFallSound() {
+    createOscillator(250, 0.8);
+  }
+
   soundToggle.addEventListener('click', () => {
     soundEnabled = !soundEnabled;
     soundToggle.textContent = soundEnabled ? '🔊' : '🔇';
@@ -197,6 +201,8 @@
 
   // Ball
   let ball = null;
+  let ballRestTimer = 0;
+  let lastBallPositions = [];
 
   // Stems and leaves
   let stems = [];
@@ -282,7 +288,9 @@
       end: { x: endX, y: endY },
       control1: { x: controlPoint1X, y: controlPoint1Y },
       control2: { x: controlPoint2X, y: controlPoint2Y },
-      points: points
+      points: points,
+      falling: false,
+      leafCount: 4
     };
   }
 
@@ -328,7 +336,8 @@
             falling: false,
             velocity: { x: 0, y: 0 },
             stemLength: 8,
-            stemAngle: Math.random() * Math.PI * 2
+            stemAngle: Math.random() * Math.PI * 2,
+            parentStem: stem
           };
           leaves.push(leaf);
         }
@@ -549,6 +558,42 @@
     ctx.fill();
   }
 
+  function checkBallRest() {
+    if (ball === null) return false;
+
+    const currentPosition = { x: ball.position.x, y: ball.position.y };
+    lastBallPositions.push(currentPosition);
+
+    if (lastBallPositions.length > 30) { // 1/2 second at 60 FPS
+      lastBallPositions.shift();
+    }
+
+    if (lastBallPositions.length === 30) {
+      const firstPosition = lastBallPositions[0];
+      const dx = currentPosition.x - firstPosition.x;
+      const dy = currentPosition.y - firstPosition.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      if (distance < 5) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  function makeStermFall(stem) {
+    if (stem.falling) return;
+
+    stem.falling = true;
+    stem.bodies.forEach(body => {
+      Matter.Body.setStatic(body, false);
+      Matter.Body.setVelocity(body, { x: (Math.random() - 0.5) * 2, y: 2 });
+    });
+
+    if (soundEnabled) playStemFallSound();
+  }
+
   function gameLoop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -575,6 +620,16 @@
           if (soundEnabled) playTotalMissSound();
         }
       }
+
+      // Check if ball has come to rest
+      if (checkBallRest()) {
+        stems.forEach(stem => {
+          const ballContacted = Matter.Query.collides(ball, stem.bodies);
+          if (ballContacted.length > 0) {
+            makeStermFall(stem);
+          }
+        });
+      }
     }
 
     // Update stems
@@ -587,6 +642,11 @@
         ctx.fillRect(-body.bounds.max.x + body.bounds.min.x, -2.5, body.bounds.max.x - body.bounds.min.x, 5);
         ctx.restore();
       });
+
+      // Check if all leaves of the stem are gone
+      if (stem.leafCount === 0 && !stem.falling) {
+        makeStermFall(stem);
+      }
     });
 
     // Update leaves
@@ -617,6 +677,9 @@
             updateScore(10);
             leafCollectedThisShot++;
             if (soundEnabled) playLeafCollectSound();
+
+            // Decrease leaf count of parent stem
+            leaf.parentStem.leafCount--;
           }
         }
       }

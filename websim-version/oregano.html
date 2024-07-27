@@ -75,6 +75,14 @@
   }
   #extraBallMessage { color: #FFD700; }
   #totalMissMessage { color: #FF4500; }
+  #soundToggle {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 24px;
+    cursor: pointer;
+    z-index: 10;
+  }
 </style>
 
 <div id="gameContainer">
@@ -89,6 +97,7 @@
   </div>
   <div id="extraBallMessage">Extra Ball!</div>
   <div id="totalMissMessage">Total Miss - Free Ball!</div>
+  <div id="soundToggle">🔊</div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.18.0/matter.min.js"></script>
@@ -103,6 +112,7 @@
   const resetBallButton = document.getElementById('resetBallButton');
   const extraBallMessage = document.getElementById('extraBallMessage');
   const totalMissMessage = document.getElementById('totalMissMessage');
+  const soundToggle = document.getElementById('soundToggle');
 
   canvas.width = 800;
   canvas.height = 600;
@@ -111,6 +121,33 @@
   let ballsLeft = 10;
   let gameActive = true;
   let lastBallScore = 0;
+  let soundEnabled = true;
+
+  // Sound effects
+  const sounds = {
+    fire: new Audio('https://oregano.game/sounds/fire.mp3'),
+    hitLeaf: new Audio('https://oregano.game/sounds/hit_leaf.mp3'),
+    extraBall: new Audio('https://oregano.game/sounds/extra_ball.mp3'),
+    totalMiss: new Audio('https://oregano.game/sounds/total_miss.mp3'),
+    gameOver: new Audio('https://oregano.game/sounds/game_over.mp3')
+  };
+
+  // Initialize all sounds to a low volume
+  Object.values(sounds).forEach(sound => {
+    sound.volume = 0.3;
+  });
+
+  soundToggle.addEventListener('click', () => {
+    soundEnabled = !soundEnabled;
+    soundToggle.textContent = soundEnabled ? '🔊' : '🔇';
+  });
+
+  function playSound(sound) {
+    if (soundEnabled) {
+      sound.currentTime = 0;
+      sound.play();
+    }
+  }
 
   // Matter.js setup
   let engine = Matter.Engine.create();
@@ -309,6 +346,7 @@
       ballsLeft--;
       updateBallsLeft();
       lastBallScore = score;
+      playSound(sounds.fire);
     }
   }
 
@@ -336,6 +374,7 @@
     gameActive = false;
     finalScoreElement.textContent = score;
     gameOverElement.style.display = 'block';
+    playSound(sounds.gameOver);
   }
 
   function restartGame() {
@@ -484,6 +523,7 @@
           ballsLeft++;
           updateBallsLeft();
           showMessage(totalMissMessage);
+          playSound(sounds.totalMiss);
         }
       }
     }
@@ -524,6 +564,7 @@
               y: -2 - Math.random() * 2
             };
             updateScore(10);
+            playSound(sounds.hitLeaf);
           }
         }
       }
@@ -556,6 +597,7 @@
       ballsLeft++;
       updateBallsLeft();
       showMessage(extraBallMessage);
+      playSound(sounds.extraBall);
     }
 
     Matter.Engine.update(engine);

@@ -279,8 +279,8 @@
 
   // Bounce triangles
   const triangleSize = 30;
-  const leftTriangle = Matter.Bodies.polygon(target.x - target.width / 2 - triangleSize / 2, target.y - triangleSize, 3, triangleSize, { isStatic: true, angle: 0 });
-  const rightTriangle = Matter.Bodies.polygon(target.x + target.width / 2 + triangleSize / 2, target.y - triangleSize, 3, triangleSize, { isStatic: true, angle: 0 });
+  const leftTriangle = Matter.Bodies.polygon(target.x - target.width / 2 - triangleSize / 2, target.y - triangleSize, 3, triangleSize, { isStatic: true, angle: Math.PI / 2 });
+  const rightTriangle = Matter.Bodies.polygon(target.x + target.width / 2 + triangleSize / 2, target.y - triangleSize, 3, triangleSize, { isStatic: true, angle: Math.PI / 2 });
   Matter.World.add(world, [leftTriangle, rightTriangle]);
 
   function createWalls() {

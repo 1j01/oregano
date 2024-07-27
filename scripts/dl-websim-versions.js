@@ -161,7 +161,7 @@ I ran into the limit of the AI's willingness to reproduce existing unchanged cod
 
 async function downloadVersions(versions, outputDirectory, outputFileName) {
 	const fs = require("fs");
-	const { mkdir } = require("fs/promises");
+	const { mkdir, writeFile, unlink } = require("fs/promises");
 	const { Readable } = require('stream');
 	const { finished } = require('stream/promises');
 	const path = require("path");
@@ -193,7 +193,10 @@ via dl-websim-versions.js
 ${commitNote? `\n${commitNote}\n` : ''}
 LLM prompt:
 ${prompt}`;
-		await exec(`git commit -F -`, { input: commitMessage });
+		const commitMessageFile = "commit-message.txt";
+		await writeFile(commitMessageFile, commitMessage);
+		await exec(`git commit -F ${commitMessageFile}`);
+		await unlink(commitMessageFile);
 		console.log(`Committed version ${v}`);
 		v++;
 	}

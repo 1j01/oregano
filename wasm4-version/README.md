@@ -2,6 +2,8 @@
 
 A game written in C for the [WASM-4](https://wasm4.org) fantasy console.
 
+This version of the project was abandoned due to running into an incomprehensible memory bug which I narrowed down to `s->b->vy -= force * dy;` causing `particle_count` to change.
+
 ## Building
 
 Download WASI SDK:

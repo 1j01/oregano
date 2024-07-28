@@ -192,9 +192,9 @@ async function downloadVersions(versions, outputDirectory, outputFileName) {
 		await finished(Readable.fromWeb(res.body).pipe(fileStream));
 	});
 
-	let v = 1;
-	for (const version of versions) {
-		const { id, prompt, commitSummary, commitNote } = version;
+	for (let i = 0; i < versions.length; i++) {
+		const v = i + 1;
+		const { id, prompt, commitSummary, commitNote } = versions[i];
 		// Skip if already committed
 		const { stdout, stderr } = await exec(`git log --oneline --fixed-strings --grep=${id}`);
 		if (stderr) {
@@ -203,15 +203,15 @@ async function downloadVersions(versions, outputDirectory, outputFileName) {
 		}
 		if (stdout) {
 			console.log(`Skipping version ${v} with ID ${id} as it is already mentioned in commit ${stdout.trim()}`);
-			v++;
 			continue;
 		}
 		// Download the version
 		const dlUrl = `https://party.websim.ai/api/v1/sites/${id}/html?raw=true`;
 		const outputFilePath = `${outputDirectory}/${outputFileName}`;
 		await mkdir(outputDirectory, { recursive: true });
+		console.log(`Downloading version ${v} to ${outputFilePath}`);
 		await downloadFile(dlUrl, outputFilePath);
-		console.log(`Downloaded version ${v} to ${outputFilePath}`);
+		// Commit the version
 		await exec(`git add ${outputFilePath}`);
 		console.log(`Added version ${v} to git staging area`);
 		const commitMessage = `${commitSummary || `Version ${v}`}
@@ -228,7 +228,6 @@ ${prompt}`;
 		await exec(`git commit -F ${commitMessageFile}`);
 		await unlink(commitMessageFile);
 		console.log(`Committed version ${v}`);
-		v++;
 	}
 }
 if (typeof window === 'undefined') {

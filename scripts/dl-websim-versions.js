@@ -195,6 +195,18 @@ async function downloadVersions(versions, outputDirectory, outputFileName) {
 	let v = 1;
 	for (const version of versions) {
 		const { id, prompt, commitSummary, commitNote } = version;
+		// Skip if already committed
+		const { stdout, stderr } = await exec(`git log --oneline --fixed-strings --grep=${id}`);
+		if (stderr) {
+			console.error("Error from git log:", stderr);
+			return;
+		}
+		if (stdout) {
+			console.log(`Skipping version ${v} with ID ${id} as it is already mentioned in commit ${stdout.trim()}`);
+			v++;
+			continue;
+		}
+		// Download the version
 		const dlUrl = `https://party.websim.ai/api/v1/sites/${id}/html?raw=true`;
 		const outputFilePath = `${outputDirectory}/${outputFileName}`;
 		await mkdir(outputDirectory, { recursive: true });

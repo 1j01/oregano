@@ -25,7 +25,7 @@
     top: 0;
     left: 0;
   }
-  #score, #ballsLeft, #level {
+  #score, #ballsLeft, #level, #multiplier {
     position: absolute;
     left: 10px;
     font-size: 18px;
@@ -34,6 +34,7 @@
   #score { top: 10px; }
   #ballsLeft { top: 35px; }
   #level { top: 60px; }
+  #multiplier { top: 85px; }
   #gameOver, #levelComplete, #gameWin {
     position: absolute;
     top: 50%;
@@ -46,7 +47,7 @@
     text-align: center;
     display: none;
   }
-  #restartButton, #nextLevelButton, #resetBallButton {
+  #restartButton, #nextLevelButton, #resetBallButton, #debugToggle {
     margin-top: 20px;
     padding: 8px 16px;
     font-size: 16px;
@@ -58,9 +59,15 @@
   }
   #resetBallButton {
     position: absolute;
-    top: 85px;
+    top: 110px;
     left: 10px;
     background-color: #f44336;
+  }
+  #debugToggle {
+    position: absolute;
+    top: 10px;
+    right: 50px;
+    background-color: #2196F3;
   }
   #extraBallMessage, #totalMissMessage {
     position: absolute;
@@ -91,7 +98,9 @@
   <div id="score">Score: 0</div>
   <div id="ballsLeft">Balls: 10</div>
   <div id="level">Level: 1</div>
+  <div id="multiplier">Multiplier: x1</div>
   <button id="resetBallButton">Reset Ball</button>
+  <button id="debugToggle">Debug Mode: OFF</button>
   <div id="gameOver">
     <h2>Game Over</h2>
     <p>Your score: <span id="finalScore"></span></p>
@@ -121,6 +130,7 @@
   const scoreElement = document.getElementById('score');
   const ballsLeftElement = document.getElementById('ballsLeft');
   const levelElement = document.getElementById('level');
+  const multiplierElement = document.getElementById('multiplier');
   const gameOverElement = document.getElementById('gameOver');
   const levelCompleteElement = document.getElementById('levelComplete');
   const gameWinElement = document.getElementById('gameWin');
@@ -131,6 +141,7 @@
   const nextLevelButton = document.getElementById('nextLevelButton');
   const restartGameButton = document.getElementById('restartGameButton');
   const resetBallButton = document.getElementById('resetBallButton');
+  const debugToggle = document.getElementById('debugToggle');
   const extraBallMessage = document.getElementById('extraBallMessage');
   const totalMissMessage = document.getElementById('totalMissMessage');
   const soundToggle = document.getElementById('soundToggle');
@@ -146,6 +157,10 @@
   let leafCollectedThisShot = 0;
   let currentLevel = 1;
   const maxLevels = 3;
+  let debugMode = false;
+  let scoreMultiplier = 1;
+  let multiplierLeaf = null;
+  let requiredLeaves = [];
 
   // Tone.js setup
   const synth = new Tone.PolySynth(Tone.Synth).toDestination();
@@ -211,12 +226,21 @@
   }
 
   function playStemFallSound() {
-    noise.start();
-    noise.stop("+0.5");
+    for (let i = 0; i < 5; i++) {
+      setTimeout(() => {
+        const freq = Math.random() * 200 + 100;
+        synth.triggerAttackRelease(freq, "32n");
+      }, i * 50);
+    }
   }
 
   function playLevelCompleteSound() {
-    synth.triggerAttackRelease("C6", "4n");
+    const notes = ["C4", "E4", "G4", "C5", "E5", "G5", "C6"];
+    notes.forEach((note, index) => {
+      setTimeout(() => {
+        choralSynth.triggerAttackRelease(note, "8n");
+      }, index * 150);
+    });
   }
 
   function playGameWinSound() {
@@ -236,6 +260,11 @@
     soundEnabled = !soundEnabled;
     soundToggle.textContent = soundEnabled ? '🔊' : '🔇';
     Tone.Master.mute = !soundEnabled;
+  });
+
+  debugToggle.addEventListener('click', () => {
+    debugMode = !debugMode;
+    debugToggle.textContent = `Debug Mode: ${debugMode ? 'ON' : 'OFF'}`;
   });
 
   // Matter.js setup
@@ -266,8 +295,8 @@
   let stems = [];
   let leaves = [];
 
-  // Moving target
-  const target = {
+  // Catcher (formerly target)
+  const catcher = {
     x: canvas.width / 2,
     y: canvas.height,
     width: 160,
@@ -279,8 +308,8 @@
 
   // Bounce triangles
   const triangleSize = 30;
-  const leftTriangle = Matter.Bodies.polygon(target.x - target.width / 2 - triangleSize / 2, target.y - triangleSize, 3, triangleSize, { isStatic: true, angle: Math.PI / 2 });
-  const rightTriangle = Matter.Bodies.polygon(target.x + target.width / 2 + triangleSize / 2, target.y - triangleSize, 3, triangleSize, { isStatic: true, angle: Math.PI / 2 });
+  const leftTriangle = Matter.Bodies.polygon(catcher.x - catcher.width / 2 - triangleSize / 2, catcher.y, 3, triangleSize, { isStatic: true, angle: Math.PI / 2 });
+  const rightTriangle = Matter.Bodies.polygon(catcher.x + catcher.width / 2 + triangleSize / 2, catcher.y, 3, triangleSize, { isStatic: true, angle: Math.PI / 2 });
   Matter.World.add(world, [leftTriangle, rightTriangle]);
 
   function createWalls() {
@@ -395,10 +424,29 @@
             velocity: { x: 0, y: 0 },
             stemLength: 8,
             stemAngle: Math.random() * Math.PI * 2,
-            parentStem: stem
+            parentStem: stem,
+            isMultiplier: false,
+            isRequired: false
           };
           leaves.push(leaf);
         }
+      }
+    }
+
+    // Set multiplier leaf
+    multiplierLeaf = leaves[Math.floor(Math.random() * leaves.length)];
+    multiplierLeaf.isMultiplier = true;
+    multiplierLeaf.color = '#800080'; // Purple
+
+    // Set required leaves
+    const numRequiredLeaves = Math.min(3 + currentLevel, leaves.length);
+    requiredLeaves = [];
+    while (requiredLeaves.length < numRequiredLeaves) {
+      const leaf = leaves[Math.floor(Math.random() * leaves.length)];
+      if (!leaf.isMultiplier && !leaf.isRequired) {
+        leaf.isRequired = true;
+        leaf.color = '#FFA500'; // Orange
+        requiredLeaves.push(leaf);
       }
     }
   }
@@ -433,11 +481,13 @@
     createStemsAndLeaves();
     Matter.World.add(world, [leftTriangle, rightTriangle]);
 
-    target.speed = 3 + currentLevel; // Increase target speed with each level
+    catcher.speed = 3 + currentLevel; // Increase catcher speed with each level
 
     ballsLeft = 10 + currentLevel * 2; // Increase starting balls with each level
     updateBallsLeft();
     levelElement.textContent = `Level: ${currentLevel}`;
+    scoreMultiplier = 1;
+    updateMultiplier();
   }
 
   initializeLevel();
@@ -482,12 +532,16 @@
   }
 
   function updateScore(points) {
-    score += points;
+    score += points * scoreMultiplier;
     scoreElement.textContent = `Score: ${score}`;
   }
 
   function updateBallsLeft() {
     ballsLeftElement.textContent = `Balls: ${ballsLeft}`;
+  }
+
+  function updateMultiplier() {
+    multiplierElement.textContent = `Multiplier: x${scoreMultiplier}`;
   }
 
   function showMessage(messageElement) {
@@ -677,8 +731,7 @@
   }
 
   function checkLevelComplete() {
-    const activeLeaves = leaves.filter(leaf => leaf.active).length;
-    return activeLeaves === 0;
+    return requiredLeaves.every(leaf => !leaf.active);
   }
 
   function gameLoop() {
@@ -758,7 +811,8 @@
             leaf.active = false;
             leaf.falling = true;
             leaf.velocity = {
-              x: (Math.random() - 0.5) * 2,
+              x: (Math.random() - 0.5)
+              * 2,
               y: -2 - Math.random() * 2
             };
             updateScore(10);
@@ -767,6 +821,12 @@
 
             // Decrease leaf count of parent stem
             leaf.parentStem.leafCount--;
+
+            // Check if it's a multiplier leaf
+            if (leaf.isMultiplier) {
+              scoreMultiplier++;
+              updateMultiplier();
+            }
 
             // Check if level is complete
             if (checkLevelComplete()) {
@@ -777,34 +837,50 @@
       }
     });
 
-    // Update target
-    target.x += target.direction * target.speed;
-    if (target.x - target.width / 2 < 0 || target.x + target.width / 2 > canvas.width) {
-      target.direction *= -1;
+    // Update catcher
+    catcher.x += catcher.direction * catcher.speed;
+    if (catcher.x - catcher.width / 2 < 0 || catcher.x + catcher.width / 2 > canvas.width) {
+      catcher.direction *= -1;
     }
-    ctx.fillStyle = target.color;
-    ctx.fillRect(target.x - target.width / 2, target.y - target.height, target.width, target.height);
+    ctx.fillStyle = catcher.color;
+    ctx.fillRect(catcher.x - catcher.width / 2, catcher.y - catcher.height, catcher.width, catcher.height);
 
     // Draw bounce triangles
     drawTriangle(ctx, leftTriangle);
     drawTriangle(ctx, rightTriangle);
 
     // Update triangle positions
-    Matter.Body.setPosition(leftTriangle, { x: target.x - target.width / 2 - triangleSize / 2, y: target.y - triangleSize });
-    Matter.Body.setPosition(rightTriangle, { x: target.x + target.width / 2 + triangleSize / 2, y: target.y - triangleSize });
+    Matter.Body.setPosition(leftTriangle, { x: catcher.x - catcher.width / 2 - triangleSize / 2, y: catcher.y });
+    Matter.Body.setPosition(rightTriangle, { x: catcher.x + catcher.width / 2 + triangleSize / 2, y: catcher.y });
 
-    // Check if ball hits target
+    // Check if ball hits catcher
     if (ball !== null && 
-        ball.position.x > target.x - target.width / 2 &&
-        ball.position.x < target.x + target.width / 2 &&
-        ball.position.y > target.y - target.height &&
-        ball.position.y < target.y) {
+        ball.position.x > catcher.x - catcher.width / 2 &&
+        ball.position.x < catcher.x + catcher.width / 2 &&
+        ball.position.y > catcher.y - catcher.height &&
+        ball.position.y < catcher.y) {
       Matter.World.remove(world, ball);
       ball = null;
       ballsLeft++;
       updateBallsLeft();
       showMessage(extraBallMessage);
       if (soundEnabled) playCatcherSound();
+    }
+
+    // Debug mode
+    if (debugMode) {
+      ctx.strokeStyle = 'rgba(255, 0, 0, 0.5)';
+      ctx.lineWidth = 1;
+      Matter.Composite.allBodies(engine.world).forEach((body) => {
+        ctx.beginPath();
+        const vertices = body.vertices;
+        ctx.moveTo(vertices[0].x, vertices[0].y);
+        for (let j = 1; j < vertices.length; j += 1) {
+          ctx.lineTo(vertices[j].x, vertices[j].y);
+        }
+        ctx.lineTo(vertices[0].x, vertices[0].y);
+        ctx.stroke();
+      });
     }
 
     Matter.Engine.update(engine);

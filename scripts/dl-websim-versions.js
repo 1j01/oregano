@@ -33,6 +33,8 @@
 // Could add a cancel button. Could add a start button too, so the page is likely focused when you try to press Esc.
 // Could also move the overlay to the bottom of the screen since the version list is near the top.
 
+// TODO: handle "!continue" prompts, which are used to continue output when it's too long.
+
 async function collectAllVersions(versionListDivSelector, promptSelector) {
 	const aggregatedResults = [];
 
@@ -187,16 +189,20 @@ function buildQuerySelector(elem, relativeToParent = document.body) {
 
 
 // Add commit summaries (can be improved with ChatGPT or manual editing before committing)
-function addCommitSummaries(results) {
+function addCommitSummaries(results, placeholder) {
 	return results.map(({ prompt, id }) => {
 		let commitSummary = prompt;
-		const maxLength = 50;
-		if (prompt.length > maxLength) {
-			let cutOff = maxLength - '...'.length;
-			if (prompt.includes("\n")) {
-				cutOff = Math.min(cutOff, prompt.indexOf("\n"));
+		if (placeholder !== undefined) {
+			commitSummary = placeholder;
+		} else {
+			const maxLength = 50;
+			if (prompt.length > maxLength) {
+				let cutOff = maxLength - '...'.length;
+				if (prompt.includes("\n")) {
+					cutOff = Math.min(cutOff, prompt.indexOf("\n"));
+				}
+				commitSummary = prompt.substring(0, cutOff) + '...';
 			}
-			commitSummary = prompt.substring(0, cutOff) + '...';
 		}
 		return { prompt, id, commitSummary };
 	});
@@ -340,13 +346,17 @@ async function collectVersionsInteractively() {
 		return;
 	}
 	const allVersions = await collectAllVersions(versionListDivSelector, promptSelector);
-	const versionsWithCommitSummaries = addCommitSummaries(allVersions);
-	const json = JSON.stringify(versionsWithCommitSummaries, null, "\t");
-	console.log(json);
-	const llmPrompt = json.replace(/"commitSummary": "([^"]*)"/g, '"commitSummary": ""') + "\n\n\nAdd short one-line commitSummary fields to these, based on the prompts.";
+	const versionsWithTruncatedPromptCommitSummaries = addCommitSummaries(allVersions);
+	const versionsWithGenericCommitSummaries = addCommitSummaries(allVersions, "WebSim updates");
+	const versionsWithEmptyCommitSummaries = addCommitSummaries(allVersions, "");
+	const jsonWithTruncatedPromptCommitSummaries = JSON.stringify(versionsWithTruncatedPromptCommitSummaries, null, "\t");
+	const jsonWithGenericCommitSummaries = JSON.stringify(versionsWithGenericCommitSummaries, null, "\t");
+	const llmPrompt = `${JSON.stringify(versionsWithEmptyCommitSummaries, null, "\t")}\n\n\nAdd short one-line commitSummary fields to these, based on the prompts.`;
+	console.log(jsonWithTruncatedPromptCommitSummaries);
 	showOutputDialog([
-		{ outputText: json, noun: "JSON", label: "JSON", default: true },
-		{ outputText: llmPrompt, noun: "LLM prompt", label: "LLM prompt (for automatic commit summaries)" },
+		{ outputText: jsonWithTruncatedPromptCommitSummaries, noun: "JSON", label: "JSON with truncated prompt commit summaries", default: true },
+		{ outputText: jsonWithGenericCommitSummaries, noun: "JSON", label: "JSON with generic commit summaries", default: true },
+		{ outputText: llmPrompt, noun: "LLM prompt", label: "LLM prompt for better automatic commit summaries" },
 	]);
 }
 
@@ -709,7 +719,7 @@ async function downloadVersions(versions, outputDirectory, outputFileName) {
 		console.log(`Added version ${v} to git staging area`);
 		const commitMessage = `${commitSummary || `Version ${v}`}
 
-Websim version link: https://websim.ai/c/${id}
+WebSim version link: https://websim.ai/c/${id}
 
 Automatically downloaded from ${dlUrl}
 via dl-websim-versions.js
